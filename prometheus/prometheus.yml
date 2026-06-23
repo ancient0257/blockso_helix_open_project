@@ -1,0 +1,298 @@
+# Prometheus scrape configuration for Helix — Ethereum devnet monitoring
+# Designed for use with ethpandaops/ethereum-package on Kurtosis
+#
+# Labels injected by relabel_configs:
+#   client       — software name (geth, reth, lighthouse, …)
+#   client_type  — layer (el, cl, vc, exporter, infra)
+#   participant  — participant index within the devnet (1, 2, …)
+#
+# metric_relabel_configs are applied after scrape to:
+#   • Drop metrics that cause cardinality explosions in devnet environments
+#   • Normalise go_* / process_* label sets across all clients
+
+global:
+  scrape_interval:     15s
+  scrape_timeout:      10s
+  evaluation_interval: 15s
+  external_labels:
+    project: "helix"
+
+rule_files:
+  - "rules/*.yml"
+  - "rules/*.yaml"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# YAML anchors — reusable relabel and metric_relabel snippets
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Extract participant index from Kurtosis EL service name: el-<n>-<client>-<cl>
+x-relabel-el: &relabel-el
+  - source_labels: [__address__]
+    regex:          "el-(\\d+)-.*"
+    target_label:   participant
+    replacement:    "$1"
+
+# Extract participant index from Kurtosis CL service name: cl-<n>-<client>-<el>
+x-relabel-cl: &relabel-cl
+  - source_labels: [__address__]
+    regex:          "cl-(\\d+)-.*"
+    target_label:   participant
+    replacement:    "$1"
+
+# Extract participant index from Kurtosis VC service name: vc-<n>-<client>-…
+x-relabel-vc: &relabel-vc
+  - source_labels: [__address__]
+    regex:          "vc-(\\d+)-.*"
+    target_label:   participant
+    replacement:    "$1"
+
+# Drop high-cardinality Go histogram buckets that are rarely useful in devnets
+x-drop-go-noise: &drop-go-noise
+  - source_labels: [__name__]
+    regex:          "go_gc_duration_seconds"
+    target_label:   __tmp_drop
+    replacement:    "1"
+  - source_labels: [__name__, le]
+    regex:          "go_gc_duration_seconds;(\\+Inf)"
+    action:         drop
+  # Drop per-cpu breakdown from process_cpu (too noisy with many containers)
+  - source_labels: [__name__, cpu]
+    regex:          "process_cpu_seconds_total;.*"
+    action:         drop
+
+# Drop cAdvisor metrics with empty container name (host-level noise)
+x-drop-cadvisor-noise: &drop-cadvisor-noise
+  - source_labels: [name]
+    regex:          "^$"
+    action:         drop
+  # Drop per-device network stats — keep only aggregate
+  - source_labels: [__name__, interface]
+    regex:          "container_network_.*;(lo|eth\\d+_peer)"
+    action:         drop
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Execution Layer Clients
+# ─────────────────────────────────────────────────────────────────────────────
+
+scrape_configs:
+
+  # Geth — :6060/debug/metrics/prometheus
+  - job_name: "ethereum-el-geth"
+    metrics_path:  /debug/metrics/prometheus
+    static_configs:
+      - targets:
+          - "el-1-geth-lighthouse:6060"
+          - "el-2-geth-prysm:6060"
+        labels:
+          client:      "geth"
+          client_type: "el"
+    relabel_configs: *relabel-el
+    metric_relabel_configs:
+      # Drop debug-only internal Geth metrics that flood cardinality
+      - source_labels: [__name__]
+        regex:          "system_disk_(readcount|writecount)_total"
+        action:         drop
+
+  # Reth — :9001/metrics
+  - job_name: "ethereum-el-reth"
+    metrics_path:  /metrics
+    static_configs:
+      - targets:
+          - "el-1-reth-lighthouse:9001"
+          - "el-2-reth-prysm:9001"
+        labels:
+          client:      "reth"
+          client_type: "el"
+    relabel_configs: *relabel-el
+
+  # Erigon — :6060/debug/metrics/prometheus
+  - job_name: "ethereum-el-erigon"
+    metrics_path:  /debug/metrics/prometheus
+    static_configs:
+      - targets:
+          - "el-1-erigon-lighthouse:6060"
+        labels:
+          client:      "erigon"
+          client_type: "el"
+    relabel_configs: *relabel-el
+    metric_relabel_configs:
+      # Erigon emits per-table DB metrics — drop the ones with >50 label values
+      - source_labels: [__name__]
+        regex:          "db_table_(page|overflow)_.*"
+        action:         drop
+
+  # Nethermind — :9091/metrics
+  - job_name: "ethereum-el-nethermind"
+    metrics_path:  /metrics
+    static_configs:
+      - targets:
+          - "el-1-nethermind-lighthouse:9091"
+        labels:
+          client:      "nethermind"
+          client_type: "el"
+    relabel_configs: *relabel-el
+
+  # Besu — :9545/metrics
+  - job_name: "ethereum-el-besu"
+    metrics_path:  /metrics
+    static_configs:
+      - targets:
+          - "el-1-besu-lighthouse:9545"
+        labels:
+          client:      "besu"
+          client_type: "el"
+    relabel_configs: *relabel-el
+    metric_relabel_configs:
+      # Besu emits per-method RPC histograms with many bucket labels — keep only useful quantiles
+      - source_labels: [__name__, le]
+        regex:          "besu_rpc_server_request_time_bucket;(0\\.0001|0\\.001|0\\.01|0\\.1|1\\.0|\\+Inf)"
+        action:         keep
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Consensus Layer Clients (Beacon Nodes)
+# ─────────────────────────────────────────────────────────────────────────────
+
+  # Lighthouse BN — :5054/metrics
+  - job_name: "ethereum-cl-lighthouse"
+    metrics_path:  /metrics
+    static_configs:
+      - targets:
+          - "cl-1-lighthouse-geth:5054"
+          - "cl-2-lighthouse-reth:5054"
+        labels:
+          client:      "lighthouse"
+          client_type: "cl"
+    relabel_configs: *relabel-cl
+
+  # Prysm BN — :8080/metrics
+  - job_name: "ethereum-cl-prysm"
+    metrics_path:  /metrics
+    static_configs:
+      - targets:
+          - "cl-1-prysm-geth:8080"
+        labels:
+          client:      "prysm"
+          client_type: "cl"
+    relabel_configs: *relabel-cl
+    metric_relabel_configs:
+      # Prysm emits per-slot metrics — these are very high cardinality, keep only last
+      - source_labels: [__name__]
+        regex:          "beacon_reorg_total"
+        action:         keep
+
+  # Teku BN — :8008/metrics
+  - job_name: "ethereum-cl-teku"
+    metrics_path:  /metrics
+    static_configs:
+      - targets:
+          - "cl-1-teku-geth:8008"
+        labels:
+          client:      "teku"
+          client_type: "cl"
+    relabel_configs: *relabel-cl
+
+  # Nimbus BN — :8008/metrics
+  - job_name: "ethereum-cl-nimbus"
+    metrics_path:  /metrics
+    static_configs:
+      - targets:
+          - "cl-1-nimbus-geth:8008"
+        labels:
+          client:      "nimbus"
+          client_type: "cl"
+    relabel_configs: *relabel-cl
+
+  # Lodestar BN — :8008/metrics
+  - job_name: "ethereum-cl-lodestar"
+    metrics_path:  /metrics
+    static_configs:
+      - targets:
+          - "cl-1-lodestar-geth:8008"
+        labels:
+          client:      "lodestar"
+          client_type: "cl"
+    relabel_configs: *relabel-cl
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Validator Clients
+# ─────────────────────────────────────────────────────────────────────────────
+
+  # Lighthouse VC — :5064/metrics
+  - job_name: "ethereum-vc-lighthouse"
+    metrics_path:  /metrics
+    static_configs:
+      - targets:
+          - "vc-1-lighthouse-lighthouse-geth:5064"
+        labels:
+          client:      "lighthouse"
+          client_type: "vc"
+    relabel_configs: *relabel-vc
+
+  # Prysm VC — :8081/metrics
+  - job_name: "ethereum-vc-prysm"
+    metrics_path:  /metrics
+    static_configs:
+      - targets:
+          - "vc-1-prysm-prysm-geth:8081"
+        labels:
+          client:      "prysm"
+          client_type: "vc"
+    relabel_configs: *relabel-vc
+
+  # Teku VC — :8009/metrics
+  - job_name: "ethereum-vc-teku"
+    metrics_path:  /metrics
+    static_configs:
+      - targets:
+          - "vc-1-teku-teku-geth:8009"
+        labels:
+          client:      "teku"
+          client_type: "vc"
+    relabel_configs: *relabel-vc
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ethereum-metrics-exporter
+# ─────────────────────────────────────────────────────────────────────────────
+
+  - job_name: "ethereum-metrics-exporter"
+    metrics_path:  /metrics
+    scrape_interval: 30s   # slower — this hits the RPC
+    static_configs:
+      - targets:
+          - "ethereum-metrics-exporter-1:8080"
+        labels:
+          client_type: "exporter"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Infrastructure (cAdvisor + node_exporter)
+# ─────────────────────────────────────────────────────────────────────────────
+
+  # cAdvisor — container metrics (:8080/metrics)
+  - job_name: "cadvisor"
+    metrics_path:    /metrics
+    scrape_interval: 30s
+    static_configs:
+      - targets:
+          - "cadvisor:8080"
+        labels:
+          client_type: "infra"
+    metric_relabel_configs: *drop-cadvisor-noise
+
+  # node_exporter — host metrics (:9100/metrics)
+  - job_name: "node-exporter"
+    metrics_path:    /metrics
+    scrape_interval: 30s
+    static_configs:
+      - targets:
+          - "node-exporter:9100"
+        labels:
+          client_type: "infra"
+    metric_relabel_configs:
+      # Drop per-CPU time-series breakdown — use aggregate CPU instead
+      - source_labels: [__name__, cpu]
+        regex:          "node_cpu_seconds_total;cpu\\d+"
+        action:         drop
+      # Drop rarely-used hardware temperature sensors (unavailable in containers anyway)
+      - source_labels: [__name__]
+        regex:          "node_hwmon_.*"
+        action:         drop
