@@ -1,0 +1,196 @@
+# Consensus Layer — Recording Rules
+# Normalized expressions for head slot lag, finality distance,
+# validator duty miss rates, and attestation processing.
+#
+# Convention: helix:cl:<client>:<description>
+
+groups:
+
+  # ── Lighthouse ─────────────────────────────────────────────
+  - name: helix.cl.lighthouse
+    interval: 30s
+    rules:
+      # Head slot (latest)
+      - record: helix:cl:lighthouse:head_slot
+        expr: >
+          beacon_head_slot{job="ethereum-cl-lighthouse"}
+
+      # Finalized epoch
+      - record: helix:cl:lighthouse:finalized_epoch
+        expr: >
+          beacon_finalized_epoch{job="ethereum-cl-lighthouse"}
+
+      # Distance from head to current slot (slots behind)
+      - record: helix:cl:lighthouse:slot_lag
+        expr: >
+          (floor(time() / 12) - beacon_head_slot{job="ethereum-cl-lighthouse"})
+
+      # Finality lag (current epoch - finalized epoch)
+      - record: helix:cl:lighthouse:finality_lag
+        expr: >
+          (floor(time() / 384) - beacon_finalized_epoch{job="ethereum-cl-lighthouse"})
+
+      # Attestation gossip processing rate (attestations/sec)
+      - record: helix:cl:lighthouse:attestation_processing_rate5m
+        expr: >
+          rate(beacon_attestation_processing_requests_total{
+            job="ethereum-cl-lighthouse"
+          }[5m])
+
+      # P2P peer count
+      - record: helix:cl:lighthouse:p2p_peers
+        expr: >
+          beacon_peer_connected_count{job="ethereum-cl-lighthouse"}
+
+      # Block import latency (p99, seconds)
+      - record: helix:cl:lighthouse:block_import_latency_p99
+        expr: >
+          histogram_quantile(0.99,
+            rate(beacon_block_processing_seconds_bucket{
+              job="ethereum-cl-lighthouse"
+            }[5m])
+          )
+
+  # ── Prysm ──────────────────────────────────────────────────
+  - name: helix.cl.prysm
+    interval: 30s
+    rules:
+      # Head slot
+      - record: helix:cl:prysm:head_slot
+        expr: >
+          beacon_head_slot{job="ethereum-cl-prysm"}
+
+      # Finalized epoch
+      - record: helix:cl:prysm:finalized_epoch
+        expr: >
+          beacon_current_justified_epoch{job="ethereum-cl-prysm"}
+
+      # Slot lag
+      - record: helix:cl:prysm:slot_lag
+        expr: >
+          (floor(time() / 12) - beacon_head_slot{job="ethereum-cl-prysm"})
+
+      # Finality lag
+      - record: helix:cl:prysm:finality_lag
+        expr: >
+          (floor(time() / 384) - beacon_current_justified_epoch{job="ethereum-cl-prysm"})
+
+      # P2P peer count
+      - record: helix:cl:prysm:p2p_peers
+        expr: >
+          p2p_peer_count{job="ethereum-cl-prysm",state="Connected"}
+
+      # gRPC request latency (p99, seconds)
+      - record: helix:cl:prysm:grpc_latency_p99
+        expr: >
+          histogram_quantile(0.99,
+            rate(grpc_server_handling_seconds_bucket{
+              job="ethereum-cl-prysm"
+            }[5m])
+          )
+
+  # ── Teku ───────────────────────────────────────────────────
+  - name: helix.cl.teku
+    interval: 30s
+    rules:
+      # Head slot
+      - record: helix:cl:teku:head_slot
+        expr: >
+          beacon_head_slot{job="ethereum-cl-teku"}
+
+      # Finalized epoch
+      - record: helix:cl:teku:finalized_epoch
+        expr: >
+          beacon_finalized_epoch{job="ethereum-cl-teku"}
+
+      # Slot lag
+      - record: helix:cl:teku:slot_lag
+        expr: >
+          (floor(time() / 12) - beacon_head_slot{job="ethereum-cl-teku"})
+
+      # Finality lag
+      - record: helix:cl:teku:finality_lag
+        expr: >
+          (floor(time() / 384) - beacon_finalized_epoch{job="ethereum-cl-teku"})
+
+      # P2P peer count
+      - record: helix:cl:teku:p2p_peers
+        expr: >
+          libp2p_peers{job="ethereum-cl-teku"}
+
+      # JVM heap used (bytes)
+      - record: helix:cl:teku:jvm_heap_used_bytes
+        expr: >
+          jvm_memory_used_bytes{job="ethereum-cl-teku",area="heap"}
+
+  # ── Nimbus ─────────────────────────────────────────────────
+  - name: helix.cl.nimbus
+    interval: 30s
+    rules:
+      # Head slot
+      - record: helix:cl:nimbus:head_slot
+        expr: >
+          beacon_head_slot{job="ethereum-cl-nimbus"}
+
+      # Finalized epoch
+      - record: helix:cl:nimbus:finalized_epoch
+        expr: >
+          beacon_finalized_epoch{job="ethereum-cl-nimbus"}
+
+      # Slot lag
+      - record: helix:cl:nimbus:slot_lag
+        expr: >
+          (floor(time() / 12) - beacon_head_slot{job="ethereum-cl-nimbus"})
+
+      # Finality lag
+      - record: helix:cl:nimbus:finality_lag
+        expr: >
+          (floor(time() / 384) - beacon_finalized_epoch{job="ethereum-cl-nimbus"})
+
+      # P2P peer count
+      - record: helix:cl:nimbus:p2p_peers
+        expr: >
+          nbc_peers{job="ethereum-cl-nimbus"}
+
+      # Attestation pool size
+      - record: helix:cl:nimbus:attestation_pool_size
+        expr: >
+          nbc_attestation_pool_attestations{job="ethereum-cl-nimbus"}
+
+  # ── Lodestar ───────────────────────────────────────────────
+  - name: helix.cl.lodestar
+    interval: 30s
+    rules:
+      # Head slot
+      - record: helix:cl:lodestar:head_slot
+        expr: >
+          beacon_head_slot{job="ethereum-cl-lodestar"}
+
+      # Finalized epoch
+      - record: helix:cl:lodestar:finalized_epoch
+        expr: >
+          beacon_finalized_epoch{job="ethereum-cl-lodestar"}
+
+      # Slot lag
+      - record: helix:cl:lodestar:slot_lag
+        expr: >
+          (floor(time() / 12) - beacon_head_slot{job="ethereum-cl-lodestar"})
+
+      # Finality lag
+      - record: helix:cl:lodestar:finality_lag
+        expr: >
+          (floor(time() / 384) - beacon_finalized_epoch{job="ethereum-cl-lodestar"})
+
+      # P2P peer count
+      - record: helix:cl:lodestar:p2p_peers
+        expr: >
+          libp2p_peers{job="ethereum-cl-lodestar"}
+
+      # Node.js event loop lag (p99, seconds)
+      - record: helix:cl:lodestar:event_loop_lag_p99
+        expr: >
+          histogram_quantile(0.99,
+            rate(nodejs_eventloop_lag_seconds_bucket{
+              job="ethereum-cl-lodestar"
+            }[5m])
+          )

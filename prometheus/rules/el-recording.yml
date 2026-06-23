@@ -1,0 +1,173 @@
+# Execution Layer — Recording Rules
+# Normalized cross-client expressions for block processing, RPC latency,
+# Engine API call rates, and peer counts.
+#
+# Convention: helix:el:<client>:<description>
+
+groups:
+
+  # ── Geth ────────────────────────────────────────────────────
+  - name: helix.el.geth
+    interval: 30s
+    rules:
+      # Block processing rate (blocks/sec, 5-minute window)
+      - record: helix:el:geth:block_processing_rate5m
+        expr: >
+          rate(chain_head_block{job="ethereum-el-geth"}[5m])
+
+      # Transaction pool pending count
+      - record: helix:el:geth:txpool_pending
+        expr: >
+          txpool_pending{job="ethereum-el-geth"}
+
+      # P2P peer count
+      - record: helix:el:geth:p2p_peers
+        expr: >
+          p2p_peers{job="ethereum-el-geth"}
+
+      # Engine API: forkchoiceUpdated latency (p99, seconds)
+      - record: helix:el:geth:engine_forkchoiceupdated_latency_p99
+        expr: >
+          histogram_quantile(0.99,
+            rate(rpc_duration_seconds_bucket{
+              job="ethereum-el-geth",
+              method="engine_forkchoiceUpdatedV3"
+            }[5m])
+          )
+
+      # Engine API: newPayload latency (p99, seconds)
+      - record: helix:el:geth:engine_newpayload_latency_p99
+        expr: >
+          histogram_quantile(0.99,
+            rate(rpc_duration_seconds_bucket{
+              job="ethereum-el-geth",
+              method=~"engine_newPayloadV.*"
+            }[5m])
+          )
+
+      # LevelDB / PebbleDB cache hit rate
+      - record: helix:el:geth:db_cache_hit_rate
+        expr: >
+          rate(eth_db_chaindata_cache_hit_total{job="ethereum-el-geth"}[5m])
+          /
+          (
+            rate(eth_db_chaindata_cache_hit_total{job="ethereum-el-geth"}[5m])
+            + rate(eth_db_chaindata_cache_miss_total{job="ethereum-el-geth"}[5m])
+            + 1e-9
+          )
+
+      # Go GC pause rate (pauses per second)
+      - record: helix:el:geth:go_gc_pauses_rate5m
+        expr: >
+          rate(go_gc_duration_seconds_count{job="ethereum-el-geth"}[5m])
+
+  # ── Reth ────────────────────────────────────────────────────
+  - name: helix.el.reth
+    interval: 30s
+    rules:
+      # Block processing rate
+      - record: helix:el:reth:block_processing_rate5m
+        expr: >
+          rate(reth_blockchain_tree_canonical_chain_height{job="ethereum-el-reth"}[5m])
+
+      # P2P peer count
+      - record: helix:el:reth:p2p_peers
+        expr: >
+          reth_network_connected_peers{job="ethereum-el-reth"}
+
+      # Engine API: forkchoiceUpdated latency (p99, seconds)
+      - record: helix:el:reth:engine_forkchoiceupdated_latency_p99
+        expr: >
+          histogram_quantile(0.99,
+            rate(reth_engine_rpc_response_time_seconds_bucket{
+              job="ethereum-el-reth",
+              method="engine_forkchoiceUpdatedV3"
+            }[5m])
+          )
+
+      # Engine API: newPayload latency (p99, seconds)
+      - record: helix:el:reth:engine_newpayload_latency_p99
+        expr: >
+          histogram_quantile(0.99,
+            rate(reth_engine_rpc_response_time_seconds_bucket{
+              job="ethereum-el-reth",
+              method=~"engine_newPayloadV.*"
+            }[5m])
+          )
+
+      # MDBX database freelist pages
+      - record: helix:el:reth:mdbx_freelist_pages
+        expr: >
+          reth_db_freelist{job="ethereum-el-reth"}
+
+  # ── Erigon ─────────────────────────────────────────────────
+  - name: helix.el.erigon
+    interval: 30s
+    rules:
+      # Block processing rate
+      - record: helix:el:erigon:block_processing_rate5m
+        expr: >
+          rate(chain_head_block{job="ethereum-el-erigon"}[5m])
+
+      # Sync stage progress
+      - record: helix:el:erigon:sync_stage_progress
+        expr: >
+          stages_progress{job="ethereum-el-erigon"}
+
+      # P2P peer count
+      - record: helix:el:erigon:p2p_peers
+        expr: >
+          p2p_peers{job="ethereum-el-erigon"}
+
+  # ── Nethermind ─────────────────────────────────────────────
+  - name: helix.el.nethermind
+    interval: 30s
+    rules:
+      # Block processing rate
+      - record: helix:el:nethermind:block_processing_rate5m
+        expr: >
+          rate(nethermind_blocks_sealed_total{job="ethereum-el-nethermind"}[5m])
+
+      # P2P peer count
+      - record: helix:el:nethermind:p2p_peers
+        expr: >
+          nethermind_peers_count{job="ethereum-el-nethermind"}
+
+      # .NET GC heap size (bytes)
+      - record: helix:el:nethermind:dotnet_gc_heap_bytes
+        expr: >
+          dotnet_gc_heap_size_bytes{job="ethereum-el-nethermind"}
+
+      # JSON-RPC request rate
+      - record: helix:el:nethermind:rpc_requests_rate5m
+        expr: >
+          rate(nethermind_jsonrpc_requests_total{job="ethereum-el-nethermind"}[5m])
+
+  # ── Besu ───────────────────────────────────────────────────
+  - name: helix.el.besu
+    interval: 30s
+    rules:
+      # Block processing rate
+      - record: helix:el:besu:block_processing_rate5m
+        expr: >
+          rate(besu_blockchain_chain_head_gas_used{job="ethereum-el-besu"}[5m])
+
+      # P2P peer count
+      - record: helix:el:besu:p2p_peers
+        expr: >
+          besu_peers_connected{job="ethereum-el-besu"}
+
+      # JVM heap used (bytes)
+      - record: helix:el:besu:jvm_heap_used_bytes
+        expr: >
+          jvm_memory_used_bytes{job="ethereum-el-besu",area="heap"}
+
+      # Engine API: newPayload latency (p99)
+      - record: helix:el:besu:engine_newpayload_latency_p99
+        expr: >
+          histogram_quantile(0.99,
+            rate(besu_rpc_server_request_time_bucket{
+              job="ethereum-el-besu",
+              rpcmethod=~"engine_newPayloadV.*"
+            }[5m])
+          )
