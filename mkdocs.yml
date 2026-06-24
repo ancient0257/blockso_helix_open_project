@@ -1,0 +1,63 @@
+site_name: Helix
+site_description: Devnet-aware Grafana dashboards for ethpandaops/ethereum-package
+site_url: https://BlocSoc-iitr.github.io/Helix
+repo_url: https://github.com/BlocSoc-iitr/Helix
+repo_name: BlocSoc-iitr/Helix
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: slate
+      primary: deep purple
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - scheme: default
+      primary: deep purple
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+  icon:
+    repo: fontawesome/brands/github
+
+nav:
+  - Home: index.md
+  - Quick Start: quickstart.md
+  - Metrics Reference:
+    - Execution Clients: metrics/el-clients.md
+    - Consensus Clients: metrics/cl-clients.md
+    - ethereum-metrics-exporter: metrics/exporter.md
+  - Contributing:
+    - Dashboard Guide: contributing/dashboard-guide.md
+    - Prometheus Guide: contributing/prometheus-guide.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/BlocSoc-iitr/Helix
