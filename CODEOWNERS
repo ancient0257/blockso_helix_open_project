@@ -1,0 +1,23 @@
+# CODEOWNERS
+# Each line is a file pattern followed by one or more owners.
+# Owners are matched against the contributors who have push access.
+
+# Global fallback
+*                          @BlocSoc-iitr/helix-maintainers
+
+# Grafana dashboards
+dashboards/                @BlocSoc-iitr/helix-dashboards
+
+# Prometheus configs and rules
+prometheus/                @BlocSoc-iitr/helix-prometheus
+
+# Documentation
+docs/                      @BlocSoc-iitr/helix-docs
+mkdocs.yml                 @BlocSoc-iitr/helix-docs
+
+# CI/CD
+.github/                   @BlocSoc-iitr/helix-maintainers
+scripts/                   @BlocSoc-iitr/helix-maintainers
+
+# Website
+website/                   @BlocSoc-iitr/helix-maintainers
