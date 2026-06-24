@@ -1,0 +1,115 @@
+{
+  "uid": "helix-vc-overview",
+  "title": "Helix — Validator Client Overview",
+  "description": "Cross-client validator duty performance: attestation hit rate, proposal success, sync committee duties, missed duties, and balance progression.",
+  "tags": ["helix", "validator", "vc"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "pluginId": "prometheus", "label": "Datasource", "hide": 0, "refresh": 1 },
+      { "name": "participant", "type": "query", "label": "Participant", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "query": "label_values(validator_total_opted_in_slashings, participant)", "refresh": 2, "includeAll": true, "allValue": ".*", "multi": true, "sort": 1 }
+    ]
+  },
+  "panels": [
+    { "id": 1, "type": "row", "title": "Attestation Duties", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 } },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Attestations Sent Rate",
+      "description": "Attestations published per second. Should track closely to validator count divided by 32 per slot.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 1 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "expr": "rate(validator_attestations_total{job=~\"ethereum-vc-.*\", participant=~\"$participant\"}[5m])", "legendFormat": "{{client}} / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Missed Attestations",
+      "description": "Attestation duties that were missed. Non-zero values indicate validator liveness issues.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 1 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        }
+      },
+      "targets": [
+        { "expr": "increase(validator_attestation_publication_failed_total{job=~\"ethereum-vc-.*\", participant=~\"$participant\"}[5m])", "legendFormat": "{{client}} missed / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    },
+    { "id": 4, "type": "row", "title": "Block Proposals", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 8 } },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Block Proposals (success vs failed)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 9 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "expr": "increase(validator_block_proposals_total{job=~\"ethereum-vc-.*\", result=\"success\", participant=~\"$participant\"}[5m])", "legendFormat": "success / {{client}} / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } },
+        { "expr": "increase(validator_block_proposals_total{job=~\"ethereum-vc-.*\", result=\"failed\", participant=~\"$participant\"}[5m])", "legendFormat": "failed / {{client}} / p{{participant}}", "refId": "B", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Validator Balance Change Rate",
+      "description": "Rate of validator balance change. Should be positive during normal operation.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 9 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "expr": "rate(validator_balance{job=~\"ethereum-vc-.*\", participant=~\"$participant\"}[5m])", "legendFormat": "{{client}} / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    },
+    { "id": 7, "type": "row", "title": "Validator Client Health", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 } },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Beacon Node Connection",
+      "description": "Whether the validator client is connected to its beacon node. 1 = connected.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 17 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [{ "options": { "0": { "text": "Disconnected", "color": "red" }, "1": { "text": "Connected", "color": "green" } }, "type": "value" }],
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "targets": [
+        { "expr": "validator_is_connected_to_beacon_node{job=~\"ethereum-vc-.*\", participant=~\"$participant\"}", "legendFormat": "{{client}} / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Total Validators",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 17 },
+      "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "none" } },
+      "targets": [
+        { "expr": "validator_count{job=~\"ethereum-vc-.*\", participant=~\"$participant\"}", "legendFormat": "{{client}} / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    }
+  ]
+}

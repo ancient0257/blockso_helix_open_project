@@ -1,0 +1,94 @@
+{
+  "uid": "helix-eth-metrics-exporter",
+  "title": "Helix — Cross-Client API View",
+  "description": "Unified cross-client view using ethereum-metrics-exporter: sync status comparison, current block across all EL participants, head/safe/finalized comparison, and peer count comparison.",
+  "tags": ["helix", "cross-client", "ethereum-metrics-exporter", "overview"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "pluginId": "prometheus", "label": "Datasource", "hide": 0, "refresh": 1 },
+      { "name": "participant", "type": "query", "label": "Participant", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "query": "label_values(ethereum_sync_status, participant)", "refresh": 2, "includeAll": true, "allValue": ".*", "multi": true, "sort": 1 }
+    ]
+  },
+  "panels": [
+    { "id": 1, "type": "row", "title": "Sync Status", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 } },
+    {
+      "id": 2,
+      "type": "table",
+      "title": "EL Sync Status Comparison",
+      "description": "Sync status for all EL participants. 0 = synced, 1 = syncing.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 1 },
+      "options": { "sortBy": [{ "displayName": "participant", "desc": false }] },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "options": { "0": { "text": "✅ Synced", "color": "green" }, "1": { "text": "⏳ Syncing", "color": "yellow" } }, "type": "value" }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }] }
+        }
+      },
+      "targets": [
+        { "expr": "ethereum_sync_status{participant=~\"$participant\"}", "legendFormat": "{{participant}}", "refId": "A", "instant": true, "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ],
+      "transformations": [
+        { "id": "labelsToFields", "options": { "valueLabel": "participant" } },
+        { "id": "organize", "options": { "renameByName": { "participant": "Participant", "Value": "Sync Status" } } }
+      ]
+    },
+    { "id": 3, "type": "row", "title": "Block Heights", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 } },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Current Block (All EL Participants)",
+      "description": "Canonical head block across all EL clients. Diverging lines indicate a fork or sync issue.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 7 },
+      "options": { "legend": { "displayMode": "table", "placement": "right" }, "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "expr": "ethereum_execution_layer_head_block_number{participant=~\"$participant\"}", "legendFormat": "p{{participant}} — head", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } },
+        { "expr": "ethereum_execution_layer_safe_block_number{participant=~\"$participant\"}", "legendFormat": "p{{participant}} — safe", "refId": "B", "datasource": { "type": "prometheus", "uid": "${datasource}" } },
+        { "expr": "ethereum_execution_layer_finalized_block_number{participant=~\"$participant\"}", "legendFormat": "p{{participant}} — finalized", "refId": "C", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "EL Peer Count (All Participants)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 7 },
+      "options": { "legend": { "displayMode": "table", "placement": "right" }, "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "expr": "ethereum_execution_layer_peer_count{participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    },
+    { "id": 6, "type": "row", "title": "Head Divergence Check", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 } },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Head Block Spread (max - min)",
+      "description": "The difference between the highest and lowest head block across all EL participants. Should be 0 or 1. High values indicate network partition or sync issues.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 16 },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 2 }, { "color": "red", "value": 10 }] },
+          "custom": { "thresholdsStyle": { "mode": "line+area" } }
+        }
+      },
+      "targets": [
+        { "expr": "max(ethereum_execution_layer_head_block_number) - min(ethereum_execution_layer_head_block_number)", "legendFormat": "head spread (blocks)", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    }
+  ]
+}
