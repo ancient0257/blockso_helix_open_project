@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Helix — Ethereum Devnet Observability</title>
+  <meta name="description" content="Helix is an open-source collection of Grafana dashboards for ethpandaops/ethereum-package devnets. Devnet-aware. Multi-client. Production-quality." />
+  <meta property="og:title" content="Helix — Ethereum Devnet Observability" />
+  <meta property="og:description" content="Open-source Grafana dashboards for Ethereum devnets built with Kurtosis. 14 dashboards covering all major EL and CL clients." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── Navigation ── -->
+  <nav id="navbar" class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo" aria-label="Helix home">
+        <span class="logo-hex" aria-hidden="true">⬡</span>
+        <span class="logo-text">Helix</span>
+      </a>
+      <ul class="nav-links" role="list">
+        <li><a href="#dashboards" class="nav-link">Dashboards</a></li>
+        <li><a href="#how-it-works" class="nav-link">Architecture</a></li>
+        <li><a href="#contribute" class="nav-link">Contribute</a></li>
+        <li>
+          <a href="https://github.com/BlocSoc-iitr/Helix" class="nav-cta" target="_blank" rel="noopener noreferrer" id="nav-github">
+            GitHub →
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <div class="hero-bg" aria-hidden="true">
+    <canvas id="hero-canvas"></canvas>
+    <div class="hero-glow hero-glow-1"></div>
+    <div class="hero-glow hero-glow-2"></div>
+    <div class="hero-glow hero-glow-3"></div>
+  </div>
+
+  <section class="hero" id="hero" aria-label="Hero">
+    <div class="hero-content">
+      <div class="hero-badge animate-fade-up" style="animation-delay:.08s">
+        <span class="badge-dot" aria-hidden="true"></span>
+        Open Source · Apache 2.0 · ethpandaops-compatible
+      </div>
+      <h1 class="hero-title animate-fade-up" style="animation-delay:.18s">
+        Ethereum Devnet<br/>
+        <span class="gradient-text">Observability</span><br/>
+        Done Right.
+      </h1>
+      <p class="hero-desc animate-fade-up" style="animation-delay:.28s">
+        Helix provides production-quality Grafana dashboards, Prometheus rules, and alerts built specifically for
+        <strong>ethpandaops/ethereum-package</strong> devnets on Kurtosis —
+        per-client, multi-participant, and devnet-aware out of the box.
+      </p>
+      <div class="hero-actions animate-fade-up" style="animation-delay:.38s">
+        <a href="https://github.com/BlocSoc-iitr/Helix" class="btn btn-primary" target="_blank" rel="noopener noreferrer" id="hero-github-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          View on GitHub
+        </a>
+        <a href="docs/quickstart.html" class="btn btn-secondary" id="hero-docs-btn">
+          Quick Start →
+        </a>
+      </div>
+      <div class="hero-stats animate-fade-up" style="animation-delay:.48s">
+        <div class="stat-item">
+          <span class="stat-value" data-target="14" id="stat-dashboards">14</span>
+          <span class="stat-label">Dashboards</span>
+        </div>
+        <div class="stat-divider" aria-hidden="true"></div>
+        <div class="stat-item">
+          <span class="stat-value" data-target="10" id="stat-clients">10</span>
+          <span class="stat-label">EL + CL Clients</span>
+        </div>
+        <div class="stat-divider" aria-hidden="true"></div>
+        <div class="stat-item">
+          <span class="stat-value" data-target="3" id="stat-sources">3</span>
+          <span class="stat-label">Metric Sources</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Animated terminal -->
+    <div class="hero-visual animate-fade-up" style="animation-delay:.6s" aria-hidden="true">
+      <div class="terminal" role="presentation" title="Click to copy quick-start command" id="hero-terminal">
+        <div class="terminal-header">
+          <div class="terminal-dot dot-red"></div>
+          <div class="terminal-dot dot-yellow"></div>
+          <div class="terminal-dot dot-green"></div>
+          <span class="terminal-title" id="terminal-title">helix devnet overview</span>
+        </div>
+        <div class="terminal-body">
+          <div class="terminal-line"><span class="t-prompt">›</span><span class="t-label">EL Sync Status</span><span class="t-ok">● SYNCED</span></div>
+          <div class="terminal-line"><span class="t-prompt">›</span><span class="t-label">Head Block</span><span class="t-val">1,842,640</span></div>
+          <div class="terminal-line"><span class="t-prompt">›</span><span class="t-label">Head Slot</span><span class="t-val">614,880</span></div>
+          <div class="terminal-line"><span class="t-prompt">›</span><span class="t-label">Slot Lag</span><span class="t-ok">0 slots</span></div>
+          <div class="terminal-line"><span class="t-prompt">›</span><span class="t-label">Finalized Epoch</span><span class="t-ok">19,213</span></div>
+          <div class="terminal-line"><span class="t-prompt">›</span><span class="t-label">EL Peers</span><span class="t-val">24</span></div>
+          <div class="terminal-line"><span class="t-prompt">›</span><span class="t-label">CL Peers</span><span class="t-val">38</span></div>
+          <div class="terminal-line"><span class="t-prompt">›</span><span class="t-label">Engine API p99</span><span class="t-ok">92 ms</span></div>
+          <div class="terminal-line"><span class="t-prompt">›</span><span class="t-label">Disk Used</span><span class="t-ok">41 %</span></div>
+          <div class="terminal-line"><span class="t-prompt">›</span><span class="t-label">Alerts Firing</span><span class="t-ok">None</span></div>
+        </div>
+        <div class="terminal-footer">
+          <span class="t-prompt-line">$</span>
+          <span class="terminal-cursor"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Problem ── -->
+  <section class="problem" id="problem">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">The Problem</span>
+        <h2 class="section-title">Devnets are complex.<br/>Debugging shouldn't be.</h2>
+        <p class="section-desc">When something goes wrong in a multi-client Ethereum devnet, you need answers — not raw metric dumps. Existing dashboards don't understand Kurtosis topologies, multi-participant labeling, or per-client internals.</p>
+      </div>
+      <div class="problem-grid">
+        <div class="problem-card animate-on-scroll">
+          <div class="problem-icon" aria-hidden="true">🔍</div>
+          <h3>No per-client debug dashboards</h3>
+          <p>Each EL and CL client exposes unique native metrics. No open-source dashboard collection covers all major clients with Kurtosis-aware variables and multi-participant filtering.</p>
+        </div>
+        <div class="problem-card animate-on-scroll">
+          <div class="problem-icon" aria-hidden="true">🔀</div>
+          <h3>Different metric names, same concepts</h3>
+          <p>Geth uses <code>chain_head_block</code>. Reth uses <code>reth_blockchain_tree_canonical_chain_height</code>. Nethermind differs again. Cross-client comparison requires careful normalization.</p>
+        </div>
+        <div class="problem-card animate-on-scroll">
+          <div class="problem-icon" aria-hidden="true">🏷️</div>
+          <h3>No devnet-aware labeling</h3>
+          <p>Home validator dashboards hardcode targets. Kurtosis devnets use dynamic service names. Helix extracts <code>participant</code> labels automatically via Prometheus relabel configs.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Dashboards ── -->
+  <section class="dashboards" id="dashboards">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Dashboards</span>
+        <h2 class="section-title">14 curated dashboards.<br/>Every major client covered.</h2>
+      </div>
+      <div class="dashboard-grid">
+
+        <div class="dashboard-card dashboard-card--featured animate-on-scroll">
+          <div class="dc-header">
+            <span class="dc-icon" aria-hidden="true">🗺️</span>
+            <div>
+              <h3 class="dc-title">Devnet Overview</h3>
+              <span class="dc-tag">Cross-client</span>
+            </div>
+          </div>
+          <p class="dc-desc">Single pane of glass. EL sync, CL head/finality, peer counts, host resource summary. The first dashboard to open when something feels wrong.</p>
+          <div class="dc-metrics">
+            <span>ethereum-metrics-exporter</span><span>cAdvisor</span><span>node_exporter</span>
+          </div>
+        </div>
+
+        <div class="dashboard-card animate-on-scroll">
+          <div class="dc-header"><span class="dc-icon" aria-hidden="true">⚙️</span><div><h3 class="dc-title">Geth</h3><span class="dc-tag dc-tag--el">EL</span></div></div>
+          <p class="dc-desc">LevelDB cache hit rate, Engine API latency histograms, txpool, goroutines, GC pauses.</p>
+        </div>
+
+        <div class="dashboard-card animate-on-scroll">
+          <div class="dc-header"><span class="dc-icon" aria-hidden="true">⚙️</span><div><h3 class="dc-title">Reth</h3><span class="dc-tag dc-tag--el">EL</span></div></div>
+          <p class="dc-desc">MDBX freelist, Engine API latency, P2P sessions, Rust process memory.</p>
+        </div>
+
+        <div class="dashboard-card animate-on-scroll">
+          <div class="dc-header"><span class="dc-icon" aria-hidden="true">⚙️</span><div><h3 class="dc-title">Erigon</h3><span class="dc-tag dc-tag--el">EL</span></div></div>
+          <p class="dc-desc">Stage sync progress per named stage, txpool, RPC latency.</p>
+        </div>
+
+        <div class="dashboard-card animate-on-scroll">
+          <div class="dc-header"><span class="dc-icon" aria-hidden="true">⚙️</span><div><h3 class="dc-title">Nethermind</h3><span class="dc-tag dc-tag--el">EL</span></div></div>
+          <p class="dc-desc">.NET GC heap, collections rate, thread pool, JSON-RPC rate.</p>
+        </div>
+
+        <div class="dashboard-card animate-on-scroll">
+          <div class="dc-header"><span class="dc-icon" aria-hidden="true">⚙️</span><div><h3 class="dc-title">Besu</h3><span class="dc-tag dc-tag--el">EL</span></div></div>
+          <p class="dc-desc">JVM heap + GC, Engine API latency, EVM execution, P2P peers.</p>
+        </div>
+
+        <div class="dashboard-card animate-on-scroll">
+          <div class="dc-header"><span class="dc-icon" aria-hidden="true">🔆</span><div><h3 class="dc-title">Lighthouse</h3><span class="dc-tag dc-tag--cl">CL</span></div></div>
+          <p class="dc-desc">Head slot, finality, attestation processing, block import latency, gossip topics, libp2p bandwidth.</p>
+        </div>
+
+        <div class="dashboard-card animate-on-scroll">
+          <div class="dc-header"><span class="dc-icon" aria-hidden="true">🔆</span><div><h3 class="dc-title">Prysm</h3><span class="dc-tag dc-tag--cl">CL</span></div></div>
+          <p class="dc-desc">Head slot, finality, gRPC latency histograms, P2P peer states.</p>
+        </div>
+
+        <div class="dashboard-card animate-on-scroll">
+          <div class="dc-header"><span class="dc-icon" aria-hidden="true">🔆</span><div><h3 class="dc-title">Teku</h3><span class="dc-tag dc-tag--cl">CL</span></div></div>
+          <p class="dc-desc">JVM heap + GC, head slot, finality, libp2p peers, REST API rate.</p>
+        </div>
+
+        <div class="dashboard-card animate-on-scroll">
+          <div class="dc-header"><span class="dc-icon" aria-hidden="true">🔆</span><div><h3 class="dc-title">Nimbus</h3><span class="dc-tag dc-tag--cl">CL</span></div></div>
+          <p class="dc-desc">Head slot, attestation pool size, gossip rates, peer count.</p>
+        </div>
+
+        <div class="dashboard-card animate-on-scroll">
+          <div class="dc-header"><span class="dc-icon" aria-hidden="true">🔆</span><div><h3 class="dc-title">Lodestar</h3><span class="dc-tag dc-tag--cl">CL</span></div></div>
+          <p class="dc-desc">Node.js event loop lag (p50/p95/p99), gossip queue depth, heap memory.</p>
+        </div>
+
+        <div class="dashboard-card animate-on-scroll">
+          <div class="dc-header"><span class="dc-icon" aria-hidden="true">✅</span><div><h3 class="dc-title">Validator Overview</h3><span class="dc-tag">VC</span></div></div>
+          <p class="dc-desc">Attestation duty rates, missed attestations, block proposals, balance change.</p>
+        </div>
+
+        <div class="dashboard-card animate-on-scroll">
+          <div class="dc-header"><span class="dc-icon" aria-hidden="true">🖥️</span><div><h3 class="dc-title">Host Resources</h3><span class="dc-tag">Infra</span></div></div>
+          <p class="dc-desc">Container CPU/memory/network, disk I/O, filesystem fill, NTP clock offset.</p>
+        </div>
+
+        <div class="dashboard-card animate-on-scroll">
+          <div class="dc-header"><span class="dc-icon" aria-hidden="true">🔄</span><div><h3 class="dc-title">Cross-Client API</h3><span class="dc-tag">Exporter</span></div></div>
+          <p class="dc-desc">Sync comparison table, head/safe/finalized per participant, head spread divergence.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Architecture ── -->
+  <section class="how-it-works" id="how-it-works">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Architecture</span>
+        <h2 class="section-title">Three metric sources.<br/>One unified view.</h2>
+      </div>
+      <div class="sources-grid">
+        <div class="source-card animate-on-scroll">
+          <div class="source-number">01</div>
+          <h3>Client-Native Metrics</h3>
+          <p>Each Ethereum client exposes its own internals: database latency, sync stages, Engine API timings, runtime pressure. Helix curates the most signal-dense metrics per client.</p>
+          <div class="source-clients">
+            <span>Geth</span><span>Reth</span><span>Erigon</span><span>Nethermind</span><span>Besu</span>
+            <span>Lighthouse</span><span>Prysm</span><span>Teku</span><span>Nimbus</span><span>Lodestar</span>
+          </div>
+        </div>
+        <div class="source-card animate-on-scroll">
+          <div class="source-number">02</div>
+          <h3>ethereum-metrics-exporter</h3>
+          <p>A client-agnostic exporter from ethpandaops that polls the standard JSON-RPC and Beacon API. Normalized cross-client baseline for sync status, head block, peers, and fork state.</p>
+          <div class="source-clients">
+            <span>Sync status</span><span>Head block</span><span>Safe/Finalized</span><span>Peer count</span>
+          </div>
+        </div>
+        <div class="source-card animate-on-scroll">
+          <div class="source-number">03</div>
+          <h3>cAdvisor + node_exporter</h3>
+          <p>Container and host-level resources. CPU throttling, memory pressure, disk I/O, filesystem fill rate, NTP drift — the infrastructure layer that can silently kill client performance.</p>
+          <div class="source-clients">
+            <span>CPU</span><span>Memory</span><span>Disk I/O</span><span>Network</span><span>NTP</span>
+          </div>
+        </div>
+      </div>
+      <div class="arch-flow animate-on-scroll">
+        <div class="flow-step">
+          <div class="flow-icon" aria-hidden="true">🟣</div>
+          <span>Kurtosis Devnet</span>
+        </div>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-step">
+          <div class="flow-icon" aria-hidden="true">📡</div>
+          <span>/metrics scrape</span>
+        </div>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-step">
+          <div class="flow-icon" aria-hidden="true">🔵</div>
+          <span>Prometheus + Rules</span>
+        </div>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-step">
+          <div class="flow-icon" aria-hidden="true">🟠</div>
+          <span>Grafana + Helix</span>
+        </div>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-step">
+          <div class="flow-icon" aria-hidden="true">✅</div>
+          <span>Answers</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Contribute ── -->
+  <section class="contribute" id="contribute">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Open Source</span>
+        <h2 class="section-title">Everyone is welcome.</h2>
+        <p class="section-desc">No deep Ethereum knowledge required. Work is broken into independent areas — pick the one that fits your skills.</p>
+      </div>
+      <div class="contrib-grid">
+        <div class="contrib-card animate-on-scroll">
+          <div class="contrib-icon" aria-hidden="true">📖</div>
+          <h3>Docs & Research</h3>
+          <p>Explain monitoring tools, document metric schemas, and build setup guides. <strong>Great for beginners.</strong></p>
+        </div>
+        <div class="contrib-card animate-on-scroll">
+          <div class="contrib-icon" aria-hidden="true">📊</div>
+          <h3>Metric Discovery</h3>
+          <p>Run clients, capture <code>/metrics</code>, and map which metrics are stable and meaningful across versions.</p>
+        </div>
+        <div class="contrib-card animate-on-scroll">
+          <div class="contrib-icon" aria-hidden="true">⚡</div>
+          <h3>Prometheus Config</h3>
+          <p>Add scrape jobs, normalize labels with relabel_configs, write recording and alerting rules with unit tests.</p>
+        </div>
+        <div class="contrib-card animate-on-scroll">
+          <div class="contrib-icon" aria-hidden="true">🎨</div>
+          <h3>Grafana Dashboards</h3>
+          <p>Design panels, build dashboard variables, and create new per-client or topic-based visualizations.</p>
+        </div>
+        <div class="contrib-card animate-on-scroll">
+          <div class="contrib-icon" aria-hidden="true">🧪</div>
+          <h3>Validation & CI</h3>
+          <p>Write dashboard validation scripts, promtool unit tests, and provisioning checks to keep everything reliable.</p>
+        </div>
+        <div class="contrib-card animate-on-scroll">
+          <div class="contrib-icon" aria-hidden="true">🔌</div>
+          <h3>New Clients</h3>
+          <p>Add support for Grandine and other emerging Ethereum clients as their metric APIs stabilize.</p>
+        </div>
+      </div>
+      <div class="contrib-cta animate-on-scroll">
+        <a href="https://github.com/BlocSoc-iitr/Helix/issues" class="btn btn-primary" target="_blank" rel="noopener noreferrer" id="issues-btn">
+          Browse Open Issues
+        </a>
+        <a href="https://github.com/BlocSoc-iitr/Helix/blob/main/CONTRIBUTING.md" class="btn btn-secondary" target="_blank" rel="noopener noreferrer" id="contributing-btn">
+          Read CONTRIBUTING.md
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <span class="logo-hex" style="font-size:1.8rem" aria-hidden="true">⬡</span>
+            <span class="logo-text">Helix</span>
+          </div>
+          <p>Devnet observability for the Ethereum ecosystem.</p>
+          <p>Built by <a href="https://github.com/BlocSoc-iitr" target="_blank" rel="noopener noreferrer">BlocSoc IIT Roorkee</a>.</p>
+        </div>
+        <div class="footer-links">
+          <div class="footer-col">
+            <h4>Project</h4>
+            <a href="https://github.com/BlocSoc-iitr/Helix" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a href="https://github.com/BlocSoc-iitr/Helix/releases" target="_blank" rel="noopener noreferrer">Releases</a>
+            <a href="https://github.com/BlocSoc-iitr/Helix/issues" target="_blank" rel="noopener noreferrer">Issues</a>
+          </div>
+          <div class="footer-col">
+            <h4>Docs</h4>
+            <a href="docs/quickstart.html">Quick Start</a>
+            <a href="docs/metrics/el-clients.html">EL Metrics</a>
+            <a href="docs/metrics/cl-clients.html">CL Metrics</a>
+          </div>
+          <div class="footer-col">
+            <h4>Ecosystem</h4>
+            <a href="https://github.com/ethpandaops/ethereum-package" target="_blank" rel="noopener noreferrer">ethereum-package</a>
+            <a href="https://github.com/kurtosis-tech/kurtosis" target="_blank" rel="noopener noreferrer">Kurtosis</a>
+            <a href="https://github.com/ethpandaops/ethereum-metrics-exporter" target="_blank" rel="noopener noreferrer">metrics-exporter</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>Licensed under <a href="https://github.com/BlocSoc-iitr/Helix/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Apache 2.0</a>.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>
