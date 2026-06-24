@@ -1,0 +1,85 @@
+{
+  "uid": "helix-cl-teku",
+  "title": "Helix — Teku (CL)",
+  "description": "Deep-dive dashboard for Teku beacon node: JVM heap, GC, head slot, finality, libp2p peers, and REST API latency.",
+  "tags": ["helix", "teku", "cl", "consensus"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "pluginId": "prometheus", "label": "Datasource", "hide": 0, "refresh": 1 },
+      { "name": "participant", "type": "query", "label": "Participant", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "query": "label_values(beacon_head_slot{job=\"ethereum-cl-teku\"}, participant)", "refresh": 2, "includeAll": true, "allValue": ".*", "multi": true, "sort": 1 }
+    ]
+  },
+  "panels": [
+    { "id": 1, "type": "row", "title": "Chain Health", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 } },
+    { "id": 2, "type": "stat", "title": "Head Slot", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 4, "x": 0, "y": 1 }, "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "none" } }, "targets": [{ "expr": "beacon_head_slot{job=\"ethereum-cl-teku\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    { "id": 3, "type": "stat", "title": "Slot Lag", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 4, "x": 4, "y": 1 }, "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 2 }, { "color": "red", "value": 5 }] } } }, "targets": [{ "expr": "helix:cl:teku:slot_lag{participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    { "id": 4, "type": "stat", "title": "libp2p Peers", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 4, "x": 8, "y": 1 }, "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 3 }, { "color": "green", "value": 10 }] } } }, "targets": [{ "expr": "libp2p_peers{job=\"ethereum-cl-teku\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    { "id": 5, "type": "stat", "title": "JVM Heap Used", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 4, "x": 12, "y": 1 }, "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "bytes" } }, "targets": [{ "expr": "jvm_memory_used_bytes{job=\"ethereum-cl-teku\", area=\"heap\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Head Slot & Finalized Epoch (in slots)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 4 },
+      "options": { "legend": { "displayMode": "table", "placement": "right" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "expr": "beacon_head_slot{job=\"ethereum-cl-teku\", participant=~\"$participant\"}", "legendFormat": "head / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } },
+        { "expr": "beacon_finalized_epoch{job=\"ethereum-cl-teku\", participant=~\"$participant\"} * 32", "legendFormat": "finalized (slots) / p{{participant}}", "refId": "B", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    },
+    { "id": 7, "type": "row", "title": "JVM Runtime", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 } },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "JVM Heap Used vs Committed",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 12 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "bytes", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "expr": "jvm_memory_used_bytes{job=\"ethereum-cl-teku\", area=\"heap\", participant=~\"$participant\"}", "legendFormat": "used / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } },
+        { "expr": "jvm_memory_committed_bytes{job=\"ethereum-cl-teku\", area=\"heap\", participant=~\"$participant\"}", "legendFormat": "committed / p{{participant}}", "refId": "B", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "JVM GC Collections Rate",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 12 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "rate(jvm_gc_collection_seconds_count{job=\"ethereum-cl-teku\", participant=~\"$participant\"}[5m])", "legendFormat": "{{gc}} / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    },
+    { "id": 10, "type": "row", "title": "P2P & REST API", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 19 } },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "libp2p Peers",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 20 },
+      "options": { "legend": { "displayMode": "list" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "libp2p_peers{job=\"ethereum-cl-teku\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "REST API Request Rate",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 20 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "rate(teku_rest_api_request_total{job=\"ethereum-cl-teku\", participant=~\"$participant\"}[5m])", "legendFormat": "{{method}} / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    }
+  ]
+}

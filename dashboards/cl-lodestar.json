@@ -1,0 +1,101 @@
+{
+  "uid": "helix-cl-lodestar",
+  "title": "Helix — Lodestar (CL)",
+  "description": "Deep-dive dashboard for Lodestar beacon node: Node.js event loop lag, head slot, gossip queue depth, attestation aggregation, and DB metrics.",
+  "tags": ["helix", "lodestar", "cl", "consensus"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "pluginId": "prometheus", "label": "Datasource", "hide": 0, "refresh": 1 },
+      { "name": "participant", "type": "query", "label": "Participant", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "query": "label_values(beacon_head_slot{job=\"ethereum-cl-lodestar\"}, participant)", "refresh": 2, "includeAll": true, "allValue": ".*", "multi": true, "sort": 1 }
+    ]
+  },
+  "panels": [
+    { "id": 1, "type": "row", "title": "Chain Health", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 } },
+    { "id": 2, "type": "stat", "title": "Head Slot", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 4, "x": 0, "y": 1 }, "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "none" } }, "targets": [{ "expr": "beacon_head_slot{job=\"ethereum-cl-lodestar\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    { "id": 3, "type": "stat", "title": "Slot Lag", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 4, "x": 4, "y": 1 }, "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 2 }, { "color": "red", "value": 5 }] } } }, "targets": [{ "expr": "helix:cl:lodestar:slot_lag{participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    { "id": 4, "type": "stat", "title": "P2P Peers", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 4, "x": 8, "y": 1 }, "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 3 }, { "color": "green", "value": 10 }] } } }, "targets": [{ "expr": "libp2p_peers{job=\"ethereum-cl-lodestar\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    { "id": 5, "type": "stat", "title": "Event Loop Lag (p99)", "description": "Node.js event loop lag p99. Values above 200ms may degrade attestation timing.", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 4, "x": 12, "y": 1 }, "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "s", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.1 }, { "color": "red", "value": 0.5 }] } } }, "targets": [{ "expr": "helix:cl:lodestar:event_loop_lag_p99{participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    { "id": 6, "type": "stat", "title": "RSS Memory", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 4, "x": 16, "y": 1 }, "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "bytes" } }, "targets": [{ "expr": "process_resident_memory_bytes{job=\"ethereum-cl-lodestar\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Head Slot Progression",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 4 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "expr": "beacon_head_slot{job=\"ethereum-cl-lodestar\", participant=~\"$participant\"}", "legendFormat": "head / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } },
+        { "expr": "beacon_finalized_epoch{job=\"ethereum-cl-lodestar\", participant=~\"$participant\"} * 32", "legendFormat": "finalized (slots) / p{{participant}}", "refId": "B", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Node.js Event Loop Lag (p50/p95/p99)",
+      "description": "Lag in the Node.js event loop. High lag means async tasks are queued and Lodestar is becoming unresponsive.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 4 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "s", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, rate(nodejs_eventloop_lag_seconds_bucket{job=\"ethereum-cl-lodestar\", participant=~\"$participant\"}[5m]))", "legendFormat": "p50 / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } },
+        { "expr": "histogram_quantile(0.95, rate(nodejs_eventloop_lag_seconds_bucket{job=\"ethereum-cl-lodestar\", participant=~\"$participant\"}[5m]))", "legendFormat": "p95 / p{{participant}}", "refId": "B", "datasource": { "type": "prometheus", "uid": "${datasource}" } },
+        { "expr": "histogram_quantile(0.99, rate(nodejs_eventloop_lag_seconds_bucket{job=\"ethereum-cl-lodestar\", participant=~\"$participant\"}[5m]))", "legendFormat": "p99 / p{{participant}}", "refId": "C", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    },
+    { "id": 9, "type": "row", "title": "P2P & Gossip", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 } },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "P2P Peer Count",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 12 },
+      "options": { "legend": { "displayMode": "list" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "libp2p_peers{job=\"ethereum-cl-lodestar\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Gossip Queue Depth",
+      "description": "Depth of the gossip message queue. High depth indicates Lodestar is falling behind on message processing.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 12 },
+      "options": { "legend": { "displayMode": "list" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "beacon_gossip_queue_length{job=\"ethereum-cl-lodestar\", participant=~\"$participant\"}", "legendFormat": "{{topic}} / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Node.js Heap Memory",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 19 },
+      "options": { "legend": { "displayMode": "list" } },
+      "fieldConfig": { "defaults": { "unit": "bytes", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "expr": "nodejs_heap_size_used_bytes{job=\"ethereum-cl-lodestar\", participant=~\"$participant\"}", "legendFormat": "heap used / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } },
+        { "expr": "nodejs_heap_size_total_bytes{job=\"ethereum-cl-lodestar\", participant=~\"$participant\"}", "legendFormat": "heap total / p{{participant}}", "refId": "B", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Process Memory (RSS)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 19 },
+      "options": { "legend": { "displayMode": "list" } },
+      "fieldConfig": { "defaults": { "unit": "bytes", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "process_resident_memory_bytes{job=\"ethereum-cl-lodestar\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    }
+  ]
+}

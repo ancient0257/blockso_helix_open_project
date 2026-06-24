@@ -1,0 +1,72 @@
+{
+  "uid": "helix-cl-nimbus",
+  "title": "Helix — Nimbus (CL)",
+  "description": "Deep-dive dashboard for Nimbus beacon node: head slot, epoch processing, gossip topic rates, memory stats, and attestation pool.",
+  "tags": ["helix", "nimbus", "cl", "consensus"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "pluginId": "prometheus", "label": "Datasource", "hide": 0, "refresh": 1 },
+      { "name": "participant", "type": "query", "label": "Participant", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "query": "label_values(beacon_head_slot{job=\"ethereum-cl-nimbus\"}, participant)", "refresh": 2, "includeAll": true, "allValue": ".*", "multi": true, "sort": 1 }
+    ]
+  },
+  "panels": [
+    { "id": 1, "type": "row", "title": "Chain Health", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 } },
+    { "id": 2, "type": "stat", "title": "Head Slot", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 4, "x": 0, "y": 1 }, "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "none" } }, "targets": [{ "expr": "beacon_head_slot{job=\"ethereum-cl-nimbus\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    { "id": 3, "type": "stat", "title": "Slot Lag", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 4, "x": 4, "y": 1 }, "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 2 }, { "color": "red", "value": 5 }] } } }, "targets": [{ "expr": "helix:cl:nimbus:slot_lag{participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    { "id": 4, "type": "stat", "title": "Peers", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 4, "x": 8, "y": 1 }, "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 3 }, { "color": "green", "value": 10 }] } } }, "targets": [{ "expr": "nbc_peers{job=\"ethereum-cl-nimbus\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    { "id": 5, "type": "stat", "title": "Attestation Pool Size", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 4, "x": 12, "y": 1 }, "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "none" } }, "targets": [{ "expr": "nbc_attestation_pool_attestations{job=\"ethereum-cl-nimbus\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    { "id": 6, "type": "stat", "title": "RSS Memory", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 4, "x": 16, "y": 1 }, "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "bytes" } }, "targets": [{ "expr": "process_resident_memory_bytes{job=\"ethereum-cl-nimbus\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Head Slot Progression",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 4 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "expr": "beacon_head_slot{job=\"ethereum-cl-nimbus\", participant=~\"$participant\"}", "legendFormat": "head / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } },
+        { "expr": "beacon_finalized_epoch{job=\"ethereum-cl-nimbus\", participant=~\"$participant\"} * 32", "legendFormat": "finalized (slots) / p{{participant}}", "refId": "B", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Attestation Pool Size",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 4 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "nbc_attestation_pool_attestations{job=\"ethereum-cl-nimbus\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    },
+    { "id": 9, "type": "row", "title": "P2P & Memory", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 } },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "P2P Peer Count",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 12 },
+      "options": { "legend": { "displayMode": "list" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "nbc_peers{job=\"ethereum-cl-nimbus\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Process Memory (RSS)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 12 },
+      "options": { "legend": { "displayMode": "list" } },
+      "fieldConfig": { "defaults": { "unit": "bytes", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "process_resident_memory_bytes{job=\"ethereum-cl-nimbus\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    }
+  ]
+}
