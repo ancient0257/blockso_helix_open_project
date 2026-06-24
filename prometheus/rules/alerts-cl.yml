@@ -1,0 +1,136 @@
+# Consensus Layer — Alert Rules
+# Alerts for head slot stale, finality stall, attestation misses,
+# and validator client connectivity.
+
+groups:
+
+  - name: helix.alerts.cl
+    rules:
+
+      # ── Head Slot ──────────────────────────────────────────
+
+      - alert: CLHeadSlotStale
+        expr: >
+          helix:cl:lighthouse:slot_lag > 2
+          or helix:cl:prysm:slot_lag > 2
+          or helix:cl:teku:slot_lag > 2
+          or helix:cl:nimbus:slot_lag > 2
+          or helix:cl:lodestar:slot_lag > 2
+        for: 3m
+        labels:
+          severity: warning
+          client_type: cl
+        annotations:
+          summary: "CL client {{ $labels.client }} participant {{ $labels.participant }} is behind head"
+          description: >
+            The consensus client {{ $labels.client }} (participant {{ $labels.participant }})
+            is {{ $value }} slots behind the current expected slot.
+            This could indicate sync delays, slow block processing, or Engine API issues.
+
+      - alert: CLHeadSlotCritical
+        expr: >
+          helix:cl:lighthouse:slot_lag > 10
+          or helix:cl:prysm:slot_lag > 10
+          or helix:cl:teku:slot_lag > 10
+          or helix:cl:nimbus:slot_lag > 10
+          or helix:cl:lodestar:slot_lag > 10
+        for: 2m
+        labels:
+          severity: critical
+          client_type: cl
+        annotations:
+          summary: "CL client {{ $labels.client }} participant {{ $labels.participant }} critically behind"
+          description: >
+            The consensus client {{ $labels.client }} (participant {{ $labels.participant }})
+            is {{ $value }} slots behind. This is critical — the client is likely not following
+            the chain and validators on this node are missing duties.
+
+      # ── Finality ───────────────────────────────────────────
+
+      - alert: CLFinalityStall
+        expr: >
+          helix:cl:lighthouse:finality_lag > 4
+          or helix:cl:prysm:finality_lag > 4
+          or helix:cl:teku:finality_lag > 4
+          or helix:cl:nimbus:finality_lag > 4
+          or helix:cl:lodestar:finality_lag > 4
+        for: 10m
+        labels:
+          severity: warning
+          client_type: cl
+        annotations:
+          summary: "Finality stalled — {{ $labels.client }} participant {{ $labels.participant }}"
+          description: >
+            The finalized epoch is {{ $value }} epochs behind the current epoch.
+            Finality may have stalled across the network. Check if more than 1/3
+            of validators are offline or experiencing issues.
+
+      - alert: CLFinalityNotProgressing
+        expr: >
+          changes(beacon_finalized_epoch{client_type="cl"}[30m]) == 0
+        for: 30m
+        labels:
+          severity: critical
+          client_type: cl
+        annotations:
+          summary: "Finality has not progressed in 30 minutes on {{ $labels.client }}"
+          description: >
+            The finalized epoch on {{ $labels.client }} (participant {{ $labels.participant }})
+            has not advanced in 30 minutes. This indicates a network-wide finality stall.
+            Check validator participation rates and EL health.
+
+      # ── Peer Count ─────────────────────────────────────────
+
+      - alert: CLPeerCountLow
+        expr: >
+          helix:cl:lighthouse:p2p_peers < 3
+          or helix:cl:prysm:p2p_peers < 3
+          or helix:cl:teku:p2p_peers < 3
+          or helix:cl:nimbus:p2p_peers < 3
+          or helix:cl:lodestar:p2p_peers < 3
+        for: 5m
+        labels:
+          severity: warning
+          client_type: cl
+        annotations:
+          summary: "CL client {{ $labels.client }} has fewer than 3 peers"
+          description: >
+            Consensus client {{ $labels.client }} (participant {{ $labels.participant }})
+            has {{ $value }} peers. Low peer count may reduce gossip message propagation,
+            delaying attestation aggregation.
+
+      # ── Attestation Processing ─────────────────────────────
+
+      - alert: CLAttestationProcessingDropped
+        expr: >
+          rate(beacon_attestation_processing_requests_total{
+            job=~"ethereum-cl-.*",
+            result="Err"
+          }[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          client_type: cl
+        annotations:
+          summary: "CL client {{ $labels.client }} is dropping attestations"
+          description: >
+            The attestation error processing rate on {{ $labels.client }}
+            (participant {{ $labels.participant }}) has exceeded 0.5/s.
+            This may indicate gossip backpressure, invalid attestation floods,
+            or a node under resource pressure.
+
+      # ── Lodestar Event Loop ────────────────────────────────
+
+      - alert: LodestarEventLoopLagHigh
+        expr: >
+          helix:cl:lodestar:event_loop_lag_p99 > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          client_type: cl
+          client: lodestar
+        annotations:
+          summary: "Lodestar Node.js event loop lag p99 > 500ms"
+          description: >
+            Lodestar (participant {{ $labels.participant }}) has a p99 event loop lag
+            of {{ $value }}s. This may degrade attestation timing and gossip handling.

@@ -1,0 +1,134 @@
+# Execution Layer — Alert Rules
+# Alerts for sync stall, Engine API latency, peer count, and OOM events.
+
+groups:
+
+  - name: helix.alerts.el
+    rules:
+
+      # ── Sync ───────────────────────────────────────────────
+
+      - alert: ELSyncStalled
+        expr: >
+          (
+            rate(chain_head_block{client_type="el"}[10m]) == 0
+          )
+          unless on(job, participant)
+          (
+            ethereum_sync_status{client_type="exporter"} == 0
+          )
+        for: 5m
+        labels:
+          severity: critical
+          client_type: el
+        annotations:
+          summary: "EL client {{ $labels.client }} participant {{ $labels.participant }} sync stalled"
+          description: >
+            The execution client {{ $labels.client }} (participant {{ $labels.participant }})
+            has not processed a new block in the last 10 minutes. This may indicate a sync stall,
+            Engine API timeout, or process hang.
+
+      - alert: ELBehindHead
+        expr: >
+          helix:el:geth:block_processing_rate5m == 0
+          or helix:el:reth:block_processing_rate5m == 0
+          or helix:el:erigon:block_processing_rate5m == 0
+          or helix:el:nethermind:block_processing_rate5m == 0
+          or helix:el:besu:block_processing_rate5m == 0
+        for: 3m
+        labels:
+          severity: warning
+          client_type: el
+        annotations:
+          summary: "EL client {{ $labels.client }} participant {{ $labels.participant }} may be stalled"
+          description: >
+            Block processing rate has been zero for 3 minutes. The client may be
+            syncing, idle, or experiencing an issue.
+
+      # ── Engine API ─────────────────────────────────────────
+
+      - alert: ELEngineAPILatencyHigh
+        expr: >
+          helix:el:geth:engine_newpayload_latency_p99 > 1
+          or helix:el:reth:engine_newpayload_latency_p99 > 1
+          or helix:el:besu:engine_newpayload_latency_p99 > 1
+        for: 5m
+        labels:
+          severity: warning
+          client_type: el
+        annotations:
+          summary: "EL Engine API newPayload p99 latency above 1s ({{ $labels.client }})"
+          description: >
+            The p99 latency for engine_newPayloadV* on {{ $labels.client }}
+            (participant {{ $labels.participant }}) is above 1 second.
+            This may cause CL attestation delays and potential missed slots.
+
+      - alert: ELEngineAPILatencyCritical
+        expr: >
+          helix:el:geth:engine_newpayload_latency_p99 > 4
+          or helix:el:reth:engine_newpayload_latency_p99 > 4
+          or helix:el:besu:engine_newpayload_latency_p99 > 4
+        for: 2m
+        labels:
+          severity: critical
+          client_type: el
+        annotations:
+          summary: "EL Engine API newPayload p99 latency critically high ({{ $labels.client }})"
+          description: >
+            The p99 latency for engine_newPayloadV* on {{ $labels.client }}
+            (participant {{ $labels.participant }}) exceeds 4 seconds, well above the
+            slot time of 12 seconds. Consensus client may miss attestations.
+
+      # ── Peer Count ─────────────────────────────────────────
+
+      - alert: ELPeerCountLow
+        expr: >
+          helix:el:geth:p2p_peers < 3
+          or helix:el:reth:p2p_peers < 3
+          or helix:el:erigon:p2p_peers < 3
+          or helix:el:nethermind:p2p_peers < 3
+          or helix:el:besu:p2p_peers < 3
+        for: 5m
+        labels:
+          severity: warning
+          client_type: el
+        annotations:
+          summary: "EL client {{ $labels.client }} has fewer than 3 peers"
+          description: >
+            The execution client {{ $labels.client }} (participant {{ $labels.participant }})
+            has fewer than 3 connected peers. In a devnet this is expected during bootstrap,
+            but persistent low peer count may indicate a networking issue.
+
+      - alert: ELNoPeers
+        expr: >
+          helix:el:geth:p2p_peers == 0
+          or helix:el:reth:p2p_peers == 0
+          or helix:el:erigon:p2p_peers == 0
+          or helix:el:nethermind:p2p_peers == 0
+          or helix:el:besu:p2p_peers == 0
+        for: 3m
+        labels:
+          severity: critical
+          client_type: el
+        annotations:
+          summary: "EL client {{ $labels.client }} has zero peers"
+          description: >
+            The execution client {{ $labels.client }} (participant {{ $labels.participant }})
+            has no connected peers. The node is isolated from the network.
+
+      # ── Transaction Pool ────────────────────────────────────
+
+      - alert: ELTxPoolFull
+        expr: >
+          helix:el:geth:txpool_pending > 10000
+        for: 5m
+        labels:
+          severity: warning
+          client_type: el
+          client: geth
+        annotations:
+          summary: "Geth txpool has over 10,000 pending transactions"
+          description: >
+            Geth participant {{ $labels.participant }} has {{ $value }} pending transactions.
+            This may indicate a backlog of transactions or a test that is generating
+            high load.

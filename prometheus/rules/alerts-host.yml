@@ -1,0 +1,194 @@
+# Host & Container — Alert Rules
+# Alerts for CPU saturation, memory pressure, disk fill rate,
+# and NTP clock offset. Sources: cAdvisor, node_exporter.
+
+groups:
+
+  - name: helix.alerts.host
+    rules:
+
+      # ── CPU ────────────────────────────────────────────────
+
+      - alert: ContainerCPUSaturation
+        expr: >
+          (
+            rate(container_cpu_usage_seconds_total{
+              job="cadvisor",
+              name!=""
+            }[5m])
+            /
+            container_spec_cpu_quota{job="cadvisor", name!=""}
+            * container_spec_cpu_period{job="cadvisor", name!=""}
+          ) > 0.90
+        for: 5m
+        labels:
+          severity: warning
+          client_type: infra
+        annotations:
+          summary: "Container {{ $labels.name }} CPU usage above 90%"
+          description: >
+            Container {{ $labels.name }} is using {{ $value | humanizePercentage }} of its
+            allocated CPU. Sustained CPU saturation may slow block processing, gossip handling,
+            and validator duty timings.
+
+      - alert: HostCPUSaturation
+        expr: >
+          1 - avg by (instance) (
+            rate(node_cpu_seconds_total{
+              job="node-exporter",
+              mode="idle"
+            }[5m])
+          ) > 0.95
+        for: 5m
+        labels:
+          severity: critical
+          client_type: infra
+        annotations:
+          summary: "Host {{ $labels.instance }} CPU usage above 95%"
+          description: >
+            The host {{ $labels.instance }} is at {{ $value | humanizePercentage }} CPU utilization.
+            This will likely affect all Ethereum clients running on this host.
+
+      # ── Memory ─────────────────────────────────────────────
+
+      - alert: ContainerMemoryUsageHigh
+        expr: >
+          (
+            container_memory_working_set_bytes{job="cadvisor", name!=""}
+            /
+            container_spec_memory_limit_bytes{job="cadvisor", name!=""}
+          ) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          client_type: infra
+        annotations:
+          summary: "Container {{ $labels.name }} memory usage above 85%"
+          description: >
+            Container {{ $labels.name }} is using {{ $value | humanizePercentage }} of its
+            memory limit. If this exceeds 100%, the container will be OOM-killed.
+
+      - alert: ContainerOOMKilled
+        expr: >
+          kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} == 1
+          or
+          container_oom_events_total{job="cadvisor"} > 0
+        for: 0m
+        labels:
+          severity: critical
+          client_type: infra
+        annotations:
+          summary: "Container {{ $labels.name }} was OOM-killed"
+          description: >
+            Container {{ $labels.name }} was killed due to out-of-memory pressure.
+            Check memory limits and client memory usage patterns.
+
+      - alert: HostMemoryUsageHigh
+        expr: >
+          (
+            1 - (
+              node_memory_MemAvailable_bytes{job="node-exporter"}
+              / node_memory_MemTotal_bytes{job="node-exporter"}
+            )
+          ) > 0.90
+        for: 5m
+        labels:
+          severity: warning
+          client_type: infra
+        annotations:
+          summary: "Host {{ $labels.instance }} memory usage above 90%"
+          description: >
+            The host {{ $labels.instance }} has only {{ $value | humanize }}% free memory.
+            This may cause OOM events for containers or OS-level swapping.
+
+      # ── Disk ───────────────────────────────────────────────
+
+      - alert: DiskFillRateHigh
+        expr: >
+          predict_linear(
+            node_filesystem_avail_bytes{
+              job="node-exporter",
+              fstype!~"tmpfs|overlay"
+            }[1h],
+            4 * 3600
+          ) < 0
+        for: 15m
+        labels:
+          severity: warning
+          client_type: infra
+        annotations:
+          summary: "Disk on {{ $labels.instance }} predicted to fill within 4 hours"
+          description: >
+            Based on current fill rate, the filesystem {{ $labels.mountpoint }} on
+            {{ $labels.instance }} is predicted to run out of space within 4 hours.
+            Ethereum clients (especially EL archival nodes) can fill disks quickly.
+
+      - alert: DiskSpaceCritical
+        expr: >
+          (
+            node_filesystem_avail_bytes{
+              job="node-exporter",
+              fstype!~"tmpfs|overlay"
+            }
+            / node_filesystem_size_bytes{
+              job="node-exporter",
+              fstype!~"tmpfs|overlay"
+            }
+          ) < 0.10
+        for: 5m
+        labels:
+          severity: critical
+          client_type: infra
+        annotations:
+          summary: "Disk {{ $labels.mountpoint }} on {{ $labels.instance }} below 10% free"
+          description: >
+            Only {{ $value | humanizePercentage }} of disk space remains on
+            {{ $labels.mountpoint }} ({{ $labels.instance }}). Ethereum clients
+            will likely crash or corrupt state when the disk fills.
+
+      # ── Network ────────────────────────────────────────────
+
+      - alert: NetworkReceiveErrorsHigh
+        expr: >
+          rate(node_network_receive_errs_total{
+            job="node-exporter"
+          }[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          client_type: infra
+        annotations:
+          summary: "Network receive errors on {{ $labels.instance }}:{{ $labels.device }}"
+          description: >
+            The interface {{ $labels.device }} on {{ $labels.instance }} is receiving
+            {{ $value }}/s network errors. This may cause P2P connection drops and
+            missed gossip messages.
+
+      # ── Clock / NTP ────────────────────────────────────────
+
+      - alert: NTPClockOffsetHigh
+        expr: >
+          abs(node_timex_offset_seconds{job="node-exporter"}) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          client_type: infra
+        annotations:
+          summary: "NTP clock offset above 500ms on {{ $labels.instance }}"
+          description: >
+            The system clock on {{ $labels.instance }} is offset from NTP by {{ $value }}s.
+            Ethereum clients require accurate system time for attestation timing.
+            Clock drift above 500ms can cause missed attestations and fork choice issues.
+
+      - alert: NTPClockOffsetCritical
+        expr: >
+          abs(node_timex_offset_seconds{job="node-exporter"}) > 2
+        for: 2m
+        labels:
+          severity: critical
+          client_type: infra
+        annotations:
+          summary: "NTP clock offset critically high on {{ $labels.instance }}"
+          description: >
+            The system clock on {{ $labels.instance }} is offset by {{ $value }}s (> 2s).
+            This will cause significant validator duty failures. Resolve NTP sync immediately.
