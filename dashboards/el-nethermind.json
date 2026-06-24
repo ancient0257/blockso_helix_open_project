@@ -1,0 +1,89 @@
+{
+  "uid": "helix-el-nethermind",
+  "title": "Helix — Nethermind (EL)",
+  "description": "Deep-dive dashboard for Nethermind execution client: .NET runtime (GC, thread pool), block processing, state trie sync, JSON-RPC latency, and peer counts.",
+  "tags": ["helix", "nethermind", "el", "execution"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "pluginId": "prometheus", "label": "Datasource", "hide": 0, "refresh": 1 },
+      { "name": "participant", "type": "query", "label": "Participant", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "query": "label_values(nethermind_peers_count, participant)", "refresh": 2, "includeAll": true, "allValue": ".*", "multi": true, "sort": 1 }
+    ]
+  },
+  "panels": [
+    { "id": 1, "type": "row", "title": "Chain & Sync", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 } },
+    { "id": 2, "type": "stat", "title": "P2P Peers", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 6, "x": 0, "y": 1 }, "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 3 }, { "color": "green", "value": 10 }] } } }, "targets": [{ "expr": "nethermind_peers_count{job=\"ethereum-el-nethermind\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    { "id": 3, "type": "stat", "title": "Blocks Sealed (total)", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 6, "x": 6, "y": 1 }, "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "none" } }, "targets": [{ "expr": "nethermind_blocks_sealed_total{job=\"ethereum-el-nethermind\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    { "id": 4, "type": "stat", "title": ".NET GC Heap (bytes)", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 6, "x": 12, "y": 1 }, "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "bytes" } }, "targets": [{ "expr": "dotnet_gc_heap_size_bytes{job=\"ethereum-el-nethermind\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Block Processing Rate",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 4 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "rate(nethermind_blocks_sealed_total{job=\"ethereum-el-nethermind\", participant=~\"$participant\"}[5m])", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "JSON-RPC Request Rate",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 4 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "rate(nethermind_jsonrpc_requests_total{job=\"ethereum-el-nethermind\", participant=~\"$participant\"}[5m])", "legendFormat": "{{method}} / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    },
+    { "id": 7, "type": "row", "title": ".NET Runtime", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 } },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": ".NET GC Heap Size",
+      "description": "Total heap size allocated by the .NET garbage collector.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 12 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "bytes", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "dotnet_gc_heap_size_bytes{job=\"ethereum-el-nethermind\", participant=~\"$participant\"}", "legendFormat": "gen{{generation}} / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": ".NET GC Collections Rate",
+      "description": "GC collections per second by generation. High Gen2 GC rate indicates memory pressure.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 12 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "rate(dotnet_gc_collections_total{job=\"ethereum-el-nethermind\", participant=~\"$participant\"}[5m])", "legendFormat": "gen{{generation}} / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Thread Pool Queue Depth",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 19 },
+      "options": { "legend": { "displayMode": "list" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "dotnet_thread_pool_queue_length{job=\"ethereum-el-nethermind\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "P2P Peer Count",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 19 },
+      "options": { "legend": { "displayMode": "list" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "nethermind_peers_count{job=\"ethereum-el-nethermind\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    }
+  ]
+}

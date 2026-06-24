@@ -1,0 +1,93 @@
+{
+  "uid": "helix-el-besu",
+  "title": "Helix — Besu (EL)",
+  "description": "Deep-dive dashboard for Besu execution client: JVM heap and GC, RocksDB cache metrics, Engine API latency, peer counts, and EVM execution.",
+  "tags": ["helix", "besu", "el", "execution"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "pluginId": "prometheus", "label": "Datasource", "hide": 0, "refresh": 1 },
+      { "name": "participant", "type": "query", "label": "Participant", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "query": "label_values(besu_peers_connected, participant)", "refresh": 2, "includeAll": true, "allValue": ".*", "multi": true, "sort": 1 }
+    ]
+  },
+  "panels": [
+    { "id": 1, "type": "row", "title": "Chain & Peers", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 } },
+    { "id": 2, "type": "stat", "title": "P2P Peers", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 6, "x": 0, "y": 1 }, "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 3 }, { "color": "green", "value": 10 }] } } }, "targets": [{ "expr": "besu_peers_connected{job=\"ethereum-el-besu\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    { "id": 3, "type": "stat", "title": "JVM Heap Used", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 6, "x": 6, "y": 1 }, "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "bytes" } }, "targets": [{ "expr": "jvm_memory_used_bytes{job=\"ethereum-el-besu\", area=\"heap\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "P2P Peer Count",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 4 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "besu_peers_connected{job=\"ethereum-el-besu\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "engine_newPayload Latency (p50/p95/p99)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 4 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "s", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, rate(besu_rpc_server_request_time_bucket{job=\"ethereum-el-besu\", rpcmethod=~\"engine_newPayloadV.*\", participant=~\"$participant\"}[5m]))", "legendFormat": "p50 / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } },
+        { "expr": "histogram_quantile(0.99, rate(besu_rpc_server_request_time_bucket{job=\"ethereum-el-besu\", rpcmethod=~\"engine_newPayloadV.*\", participant=~\"$participant\"}[5m]))", "legendFormat": "p99 / p{{participant}}", "refId": "B", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    },
+    { "id": 6, "type": "row", "title": "JVM Runtime", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 } },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "JVM Heap Memory",
+      "description": "Heap committed vs used. If used approaches committed, GC pressure will increase.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 12 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "bytes", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "expr": "jvm_memory_used_bytes{job=\"ethereum-el-besu\", area=\"heap\", participant=~\"$participant\"}", "legendFormat": "used / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } },
+        { "expr": "jvm_memory_committed_bytes{job=\"ethereum-el-besu\", area=\"heap\", participant=~\"$participant\"}", "legendFormat": "committed / p{{participant}}", "refId": "B", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "JVM GC Collection Rate",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 12 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "rate(jvm_gc_collection_seconds_count{job=\"ethereum-el-besu\", participant=~\"$participant\"}[5m])", "legendFormat": "{{gc}} / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "JVM GC Pause Time",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 19 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "s", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "rate(jvm_gc_collection_seconds_sum{job=\"ethereum-el-besu\", participant=~\"$participant\"}[5m])", "legendFormat": "{{gc}} / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "JVM Thread Count",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 19 },
+      "options": { "legend": { "displayMode": "list" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "jvm_threads_current{job=\"ethereum-el-besu\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    }
+  ]
+}

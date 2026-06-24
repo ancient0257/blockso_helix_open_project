@@ -1,0 +1,271 @@
+{
+  "uid": "helix-el-geth",
+  "title": "Helix — Geth (EL)",
+  "description": "Deep-dive dashboard for Geth execution client: sync stages, LevelDB/PebbleDB cache, RPC latency, Engine API performance, txpool, P2P, and Go runtime.",
+  "tags": ["helix", "geth", "el", "execution"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "pluginId": "prometheus",
+        "label": "Datasource",
+        "hide": 0,
+        "refresh": 1
+      },
+      {
+        "name": "participant",
+        "type": "query",
+        "label": "Participant",
+        "datasource": { "type": "prometheus", "uid": "${datasource}" },
+        "query": "label_values(chain_head_block{job=\"ethereum-el-geth\"}, participant)",
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "sort": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Sync & Chain",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Head Block",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 3, "w": 4, "x": 0, "y": 1 },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "chain_head_block{job=\"ethereum-el-geth\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "P2P Peers",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 3, "w": 4, "x": 4, "y": 1 },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 3 }, { "color": "green", "value": 10 }] }
+        }
+      },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "p2p_peers{job=\"ethereum-el-geth\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Txpool Pending",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 3, "w": 4, "x": 8, "y": 1 },
+      "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "none" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "txpool_pending{job=\"ethereum-el-geth\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "DB Cache Hit Rate",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 3, "w": 4, "x": 12, "y": 1 },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 0.7 }, { "color": "green", "value": 0.9 }] }
+        }
+      },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "helix:el:geth:db_cache_hit_rate{participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Goroutines",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 3, "w": 4, "x": 16, "y": 1 },
+      "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "none" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "go_goroutines{job=\"ethereum-el-geth\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "RSS Memory",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 3, "w": 4, "x": 20, "y": 1 },
+      "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "process_resident_memory_bytes{job=\"ethereum-el-geth\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Block Processing Rate",
+      "description": "New canonical blocks per second. Flat line = stall.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 4 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "rate(chain_head_block{job=\"ethereum-el-geth\", participant=~\"$participant\"}[5m])", "legendFormat": "p{{participant}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Txpool Size",
+      "description": "Pending and queued transactions in the txpool over time.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 4 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "txpool_pending{job=\"ethereum-el-geth\", participant=~\"$participant\"}", "legendFormat": "pending / p{{participant}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "txpool_queued{job=\"ethereum-el-geth\", participant=~\"$participant\"}", "legendFormat": "queued / p{{participant}}", "refId": "B" }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "row",
+      "title": "Engine API Latency",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "engine_forkchoiceUpdatedV3 Latency (p50/p95/p99)",
+      "description": "Time taken to respond to forkchoiceUpdated. Critical for block production timing.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 12 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "unit": "s", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "histogram_quantile(0.50, rate(rpc_duration_seconds_bucket{job=\"ethereum-el-geth\", method=\"engine_forkchoiceUpdatedV3\", participant=~\"$participant\"}[5m]))", "legendFormat": "p50 / p{{participant}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "histogram_quantile(0.95, rate(rpc_duration_seconds_bucket{job=\"ethereum-el-geth\", method=\"engine_forkchoiceUpdatedV3\", participant=~\"$participant\"}[5m]))", "legendFormat": "p95 / p{{participant}}", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "histogram_quantile(0.99, rate(rpc_duration_seconds_bucket{job=\"ethereum-el-geth\", method=\"engine_forkchoiceUpdatedV3\", participant=~\"$participant\"}[5m]))", "legendFormat": "p99 / p{{participant}}", "refId": "C" }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "engine_newPayloadV3 Latency (p50/p95/p99)",
+      "description": "Time taken to validate and import a new execution payload. High p99 causes missed attestations.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 12 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "unit": "s", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "histogram_quantile(0.50, rate(rpc_duration_seconds_bucket{job=\"ethereum-el-geth\", method=~\"engine_newPayloadV.*\", participant=~\"$participant\"}[5m]))", "legendFormat": "p50 / p{{participant}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "histogram_quantile(0.95, rate(rpc_duration_seconds_bucket{job=\"ethereum-el-geth\", method=~\"engine_newPayloadV.*\", participant=~\"$participant\"}[5m]))", "legendFormat": "p95 / p{{participant}}", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "histogram_quantile(0.99, rate(rpc_duration_seconds_bucket{job=\"ethereum-el-geth\", method=~\"engine_newPayloadV.*\", participant=~\"$participant\"}[5m]))", "legendFormat": "p99 / p{{participant}}", "refId": "C" }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "row",
+      "title": "Database",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 19 }
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "DB Cache Hit Rate",
+      "description": "Ratio of cache hits to total DB reads. Higher is better. <70% may indicate memory pressure.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 20 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1, "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "helix:el:geth:db_cache_hit_rate{participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "DB Read/Write Rate",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 20 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "unit": "Bps", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "rate(eth_db_chaindata_disk_read_total{job=\"ethereum-el-geth\", participant=~\"$participant\"}[5m])", "legendFormat": "disk reads / p{{participant}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "rate(eth_db_chaindata_disk_write_total{job=\"ethereum-el-geth\", participant=~\"$participant\"}[5m])", "legendFormat": "disk writes / p{{participant}}", "refId": "B" }
+      ]
+    },
+    {
+      "id": 16,
+      "type": "row",
+      "title": "Go Runtime",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 }
+    },
+    {
+      "id": 17,
+      "type": "timeseries",
+      "title": "Goroutine Count",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 28 },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "go_goroutines{job=\"ethereum-el-geth\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 18,
+      "type": "timeseries",
+      "title": "GC Pause Rate",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 28 },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "rate(go_gc_duration_seconds_count{job=\"ethereum-el-geth\", participant=~\"$participant\"}[5m])", "legendFormat": "p{{participant}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 19,
+      "type": "timeseries",
+      "title": "Process Memory (RSS)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 28 },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "bytes", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "process_resident_memory_bytes{job=\"ethereum-el-geth\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A" }
+      ]
+    }
+  ]
+}

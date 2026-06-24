@@ -1,0 +1,82 @@
+{
+  "uid": "helix-el-erigon",
+  "title": "Helix — Erigon (EL)",
+  "description": "Deep-dive dashboard for Erigon execution client: stage sync progress, MDBX metrics, downloader, txpool, RPC latency, and P2P.",
+  "tags": ["helix", "erigon", "el", "execution"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "pluginId": "prometheus", "label": "Datasource", "hide": 0, "refresh": 1 },
+      { "name": "participant", "type": "query", "label": "Participant", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "query": "label_values(chain_head_block{job=\"ethereum-el-erigon\"}, participant)", "refresh": 2, "includeAll": true, "allValue": ".*", "multi": true, "sort": 1 }
+    ]
+  },
+  "panels": [
+    { "id": 1, "type": "row", "title": "Sync & Chain", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 } },
+    { "id": 2, "type": "stat", "title": "Head Block", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 6, "x": 0, "y": 1 }, "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "none" } }, "targets": [{ "expr": "chain_head_block{job=\"ethereum-el-erigon\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    { "id": 3, "type": "stat", "title": "P2P Peers", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 6, "x": 6, "y": 1 }, "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 3 }, { "color": "green", "value": 10 }] } } }, "targets": [{ "expr": "p2p_peers{job=\"ethereum-el-erigon\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    { "id": 4, "type": "stat", "title": "RSS Memory", "datasource": { "type": "prometheus", "uid": "${datasource}" }, "gridPos": { "h": 3, "w": 6, "x": 12, "y": 1 }, "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }, "fieldConfig": { "defaults": { "unit": "bytes" } }, "targets": [{ "expr": "process_resident_memory_bytes{job=\"ethereum-el-erigon\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }] },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Stage Sync Progress",
+      "description": "Block progress per sync stage. All stages converging at the same block height means the node is fully synced.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 4 },
+      "options": { "legend": { "displayMode": "table", "placement": "right" }, "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "stages_progress{job=\"ethereum-el-erigon\", participant=~\"$participant\"}", "legendFormat": "{{stage}} / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    },
+    { "id": 6, "type": "row", "title": "Engine API & RPC", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 12 } },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "RPC Request Rate by Method",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 13 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "rate(rpc_calls_total{job=\"ethereum-el-erigon\", participant=~\"$participant\"}[5m])", "legendFormat": "{{method}} / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Txpool Size",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 13 },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "expr": "txpool_pending{job=\"ethereum-el-erigon\", participant=~\"$participant\"}", "legendFormat": "pending / p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } },
+        { "expr": "txpool_queued{job=\"ethereum-el-erigon\", participant=~\"$participant\"}", "legendFormat": "queued / p{{participant}}", "refId": "B", "datasource": { "type": "prometheus", "uid": "${datasource}" } }
+      ]
+    },
+    { "id": 9, "type": "row", "title": "P2P", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 20 } },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "P2P Peer Count",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 21 },
+      "options": { "legend": { "displayMode": "list" } },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "p2p_peers{job=\"ethereum-el-erigon\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Process Memory (RSS)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 21 },
+      "options": { "legend": { "displayMode": "list" } },
+      "fieldConfig": { "defaults": { "unit": "bytes", "color": { "mode": "palette-classic" } } },
+      "targets": [{ "expr": "process_resident_memory_bytes{job=\"ethereum-el-erigon\", participant=~\"$participant\"}", "legendFormat": "p{{participant}}", "refId": "A", "datasource": { "type": "prometheus", "uid": "${datasource}" } }]
+    }
+  ]
+}
