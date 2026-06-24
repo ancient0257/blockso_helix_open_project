@@ -1,0 +1,71 @@
+# HELP chain_head_block The block number of the chain head.
+# TYPE chain_head_block gauge
+chain_head_block{job="ethereum-el-geth",participant="1",client="geth"} 22504812
+
+# HELP p2p_peers The number of peers connected to the P2P network.
+# TYPE p2p_peers gauge
+p2p_peers{job="ethereum-el-geth",participant="1",client="geth"} 24
+
+# HELP txpool_pending The number of transactions in the pending txpool.
+# TYPE txpool_pending gauge
+txpool_pending{job="ethereum-el-geth",participant="1",client="geth"} 412
+
+# HELP txpool_queued The number of transactions in the queued txpool.
+# TYPE txpool_queued gauge
+txpool_queued{job="ethereum-el-geth",participant="1",client="geth"} 34
+
+# HELP eth_db_chaindata_cache_hit_total Total number of chaindata cache hits.
+# TYPE eth_db_chaindata_cache_hit_total counter
+eth_db_chaindata_cache_hit_total{job="ethereum-el-geth",participant="1",client="geth"} 4892341
+
+# HELP eth_db_chaindata_cache_miss_total Total number of chaindata cache misses.
+# TYPE eth_db_chaindata_cache_miss_total counter
+eth_db_chaindata_cache_miss_total{job="ethereum-el-geth",participant="1",client="geth"} 98421
+
+# HELP rpc_duration_seconds Histogram of RPC request durations.
+# TYPE rpc_duration_seconds histogram
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_forkchoiceUpdatedV3",le="0.005"} 102
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_forkchoiceUpdatedV3",le="0.01"} 320
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_forkchoiceUpdatedV3",le="0.025"} 890
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_forkchoiceUpdatedV3",le="0.05"} 1230
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_forkchoiceUpdatedV3",le="0.1"} 1440
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_forkchoiceUpdatedV3",le="0.25"} 1478
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_forkchoiceUpdatedV3",le="0.5"} 1490
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_forkchoiceUpdatedV3",le="1"} 1494
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_forkchoiceUpdatedV3",le="+Inf"} 1495
+rpc_duration_seconds_sum{job="ethereum-el-geth",participant="1",client="geth",method="engine_forkchoiceUpdatedV3"} 82.4
+rpc_duration_seconds_count{job="ethereum-el-geth",participant="1",client="geth",method="engine_forkchoiceUpdatedV3"} 1495
+
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_newPayloadV3",le="0.005"} 45
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_newPayloadV3",le="0.01"} 210
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_newPayloadV3",le="0.025"} 780
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_newPayloadV3",le="0.05"} 1100
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_newPayloadV3",le="0.1"} 1390
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_newPayloadV3",le="0.25"} 1470
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_newPayloadV3",le="0.5"} 1492
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_newPayloadV3",le="1"} 1495
+rpc_duration_seconds_bucket{job="ethereum-el-geth",participant="1",client="geth",method="engine_newPayloadV3",le="+Inf"} 1495
+rpc_duration_seconds_sum{job="ethereum-el-geth",participant="1",client="geth",method="engine_newPayloadV3"} 134.9
+rpc_duration_seconds_count{job="ethereum-el-geth",participant="1",client="geth",method="engine_newPayloadV3"} 1495
+
+# HELP go_goroutines Number of goroutines currently running.
+# TYPE go_goroutines gauge
+go_goroutines{job="ethereum-el-geth",participant="1",client="geth"} 147
+
+# HELP go_gc_duration_seconds A summary of the GC invocation durations.
+# TYPE go_gc_duration_seconds summary
+go_gc_duration_seconds{job="ethereum-el-geth",participant="1",client="geth",quantile="0"} 0.000123
+go_gc_duration_seconds{job="ethereum-el-geth",participant="1",client="geth",quantile="0.25"} 0.000234
+go_gc_duration_seconds{job="ethereum-el-geth",participant="1",client="geth",quantile="0.5"} 0.000345
+go_gc_duration_seconds{job="ethereum-el-geth",participant="1",client="geth",quantile="0.75"} 0.000567
+go_gc_duration_seconds{job="ethereum-el-geth",participant="1",client="geth",quantile="1"} 0.001234
+go_gc_duration_seconds_sum{job="ethereum-el-geth",participant="1",client="geth"} 0.234567
+go_gc_duration_seconds_count{job="ethereum-el-geth",participant="1",client="geth"} 892
+
+# HELP process_resident_memory_bytes Resident memory size in bytes.
+# TYPE process_resident_memory_bytes gauge
+process_resident_memory_bytes{job="ethereum-el-geth",participant="1",client="geth"} 3.891e+09
+
+# HELP process_cpu_seconds_total Total CPU time spent.
+# TYPE process_cpu_seconds_total counter
+process_cpu_seconds_total{job="ethereum-el-geth",participant="1",client="geth"} 3421.2

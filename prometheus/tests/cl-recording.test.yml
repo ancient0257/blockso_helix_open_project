@@ -1,0 +1,115 @@
+# promtool unit tests for CL recording rules
+# Run: ./scripts/check-prometheus.sh
+# Or manually: docker run --rm -v "$PWD:/workspace" -w /workspace prom/prometheus:latest \
+#              promtool test rules prometheus/tests/cl-recording.test.yml
+
+rule_files:
+  - ../rules/cl-recording.yml
+
+evaluation_interval: 1m
+
+tests:
+
+  # ── Lighthouse head slot ──────────────────────────────────
+  - interval: 1m
+    input_series:
+      - series: 'beacon_head_slot{job="ethereum-cl-lighthouse",participant="1",client="lighthouse"}'
+        values: "100 105 110 115 120 125"
+
+    promql_expr_test:
+      - expr: helix:cl:lighthouse:head_slot
+        eval_time: 5m
+        exp_samples:
+          - labels: '{job="ethereum-cl-lighthouse",participant="1",client="lighthouse"}'
+            value: 125
+
+  # ── Lighthouse finalized epoch ────────────────────────────
+  - interval: 1m
+    input_series:
+      - series: 'beacon_finalized_epoch{job="ethereum-cl-lighthouse",participant="1",client="lighthouse"}'
+        values: "10 10 11 11 12 12"
+
+    promql_expr_test:
+      - expr: helix:cl:lighthouse:finalized_epoch
+        eval_time: 5m
+        exp_samples:
+          - labels: '{job="ethereum-cl-lighthouse",participant="1",client="lighthouse"}'
+            value: 12
+
+  # ── Lighthouse p2p peers ──────────────────────────────────
+  - interval: 1m
+    input_series:
+      - series: 'beacon_peer_connected_count{job="ethereum-cl-lighthouse",participant="1",client="lighthouse"}'
+        values: "0 5 10 15 20 25"
+
+    promql_expr_test:
+      - expr: helix:cl:lighthouse:p2p_peers
+        eval_time: 5m
+        exp_samples:
+          - labels: '{job="ethereum-cl-lighthouse",participant="1",client="lighthouse"}'
+            value: 25
+
+  # ── Prysm head slot ───────────────────────────────────────
+  - interval: 1m
+    input_series:
+      - series: 'beacon_head_slot{job="ethereum-cl-prysm",participant="1",client="prysm"}'
+        values: "200 205 210 215 220 225"
+
+    promql_expr_test:
+      - expr: helix:cl:prysm:head_slot
+        eval_time: 5m
+        exp_samples:
+          - labels: '{job="ethereum-cl-prysm",participant="1",client="prysm"}'
+            value: 225
+
+  # ── Teku head slot ────────────────────────────────────────
+  - interval: 1m
+    input_series:
+      - series: 'beacon_head_slot{job="ethereum-cl-teku",participant="1",client="teku"}'
+        values: "300 305 310 315 320 325"
+
+    promql_expr_test:
+      - expr: helix:cl:teku:head_slot
+        eval_time: 5m
+        exp_samples:
+          - labels: '{job="ethereum-cl-teku",participant="1",client="teku"}'
+            value: 325
+
+  # ── Nimbus head slot ──────────────────────────────────────
+  - interval: 1m
+    input_series:
+      - series: 'beacon_head_slot{job="ethereum-cl-nimbus",participant="1",client="nimbus"}'
+        values: "400 405 410 415 420 425"
+
+    promql_expr_test:
+      - expr: helix:cl:nimbus:head_slot
+        eval_time: 5m
+        exp_samples:
+          - labels: '{job="ethereum-cl-nimbus",participant="1",client="nimbus"}'
+            value: 425
+
+  # ── Nimbus peer count ─────────────────────────────────────
+  - interval: 1m
+    input_series:
+      - series: 'nbc_peers{job="ethereum-cl-nimbus",participant="1",client="nimbus"}'
+        values: "0 10 20 30 40 50"
+
+    promql_expr_test:
+      - expr: helix:cl:nimbus:p2p_peers
+        eval_time: 5m
+        exp_samples:
+          - labels: '{job="ethereum-cl-nimbus",participant="1",client="nimbus"}'
+            value: 50
+
+  # ── Lodestar head slot ────────────────────────────────────
+  - interval: 1m
+    input_series:
+      - series: 'beacon_head_slot{job="ethereum-cl-lodestar",participant="1",client="lodestar"}'
+        values: "500 505 510 515 520 525"
+
+    promql_expr_test:
+      - expr: helix:cl:lodestar:head_slot
+        eval_time: 5m
+        exp_samples:
+          - labels: '{job="ethereum-cl-lodestar",participant="1",client="lodestar"}'
+            value: 525

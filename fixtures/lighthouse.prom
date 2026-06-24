@@ -1,0 +1,52 @@
+# HELP beacon_head_slot The latest slot of the canonical head block.
+# TYPE beacon_head_slot gauge
+beacon_head_slot{job="ethereum-cl-lighthouse",participant="1",client="lighthouse"} 10240
+
+# HELP beacon_finalized_epoch The epoch of the latest finalized checkpoint.
+# TYPE beacon_finalized_epoch gauge
+beacon_finalized_epoch{job="ethereum-cl-lighthouse",participant="1",client="lighthouse"} 319
+
+# HELP beacon_peer_connected_count The number of libp2p peers connected.
+# TYPE beacon_peer_connected_count gauge
+beacon_peer_connected_count{job="ethereum-cl-lighthouse",participant="1",client="lighthouse"} 42
+
+# HELP beacon_attestation_processing_requests_total Total attestations submitted for processing.
+# TYPE beacon_attestation_processing_requests_total counter
+beacon_attestation_processing_requests_total{job="ethereum-cl-lighthouse",participant="1",client="lighthouse",result="processed"} 983421
+beacon_attestation_processing_requests_total{job="ethereum-cl-lighthouse",participant="1",client="lighthouse",result="Err"} 234
+
+# HELP beacon_block_processing_seconds Histogram of beacon block processing times.
+# TYPE beacon_block_processing_seconds histogram
+beacon_block_processing_seconds_bucket{job="ethereum-cl-lighthouse",participant="1",client="lighthouse",le="0.005"} 820
+beacon_block_processing_seconds_bucket{job="ethereum-cl-lighthouse",participant="1",client="lighthouse",le="0.01"} 1450
+beacon_block_processing_seconds_bucket{job="ethereum-cl-lighthouse",participant="1",client="lighthouse",le="0.025"} 2100
+beacon_block_processing_seconds_bucket{job="ethereum-cl-lighthouse",participant="1",client="lighthouse",le="0.05"} 2398
+beacon_block_processing_seconds_bucket{job="ethereum-cl-lighthouse",participant="1",client="lighthouse",le="0.1"} 2450
+beacon_block_processing_seconds_bucket{job="ethereum-cl-lighthouse",participant="1",client="lighthouse",le="0.25"} 2468
+beacon_block_processing_seconds_bucket{job="ethereum-cl-lighthouse",participant="1",client="lighthouse",le="0.5"} 2480
+beacon_block_processing_seconds_bucket{job="ethereum-cl-lighthouse",participant="1",client="lighthouse",le="1"} 2490
+beacon_block_processing_seconds_bucket{job="ethereum-cl-lighthouse",participant="1",client="lighthouse",le="+Inf"} 2490
+beacon_block_processing_seconds_sum{job="ethereum-cl-lighthouse",participant="1",client="lighthouse"} 18.34
+beacon_block_processing_seconds_count{job="ethereum-cl-lighthouse",participant="1",client="lighthouse"} 2490
+
+# HELP beacon_gossip_received_total Total gossip messages received by topic.
+# TYPE beacon_gossip_received_total counter
+beacon_gossip_received_total{job="ethereum-cl-lighthouse",participant="1",client="lighthouse",topic="beacon_block"} 10241
+beacon_gossip_received_total{job="ethereum-cl-lighthouse",participant="1",client="lighthouse",topic="beacon_attestation_0"} 284532
+beacon_gossip_received_total{job="ethereum-cl-lighthouse",participant="1",client="lighthouse",topic="beacon_aggregate_and_proof"} 39823
+
+# HELP beacon_libp2p_inbound_bytes_total Total inbound bytes over libp2p.
+# TYPE beacon_libp2p_inbound_bytes_total counter
+beacon_libp2p_inbound_bytes_total{job="ethereum-cl-lighthouse",participant="1",client="lighthouse"} 1.23e+09
+
+# HELP beacon_libp2p_outbound_bytes_total Total outbound bytes over libp2p.
+# TYPE beacon_libp2p_outbound_bytes_total counter
+beacon_libp2p_outbound_bytes_total{job="ethereum-cl-lighthouse",participant="1",client="lighthouse"} 9.87e+08
+
+# HELP process_resident_memory_bytes Resident memory size in bytes.
+# TYPE process_resident_memory_bytes gauge
+process_resident_memory_bytes{job="ethereum-cl-lighthouse",participant="1",client="lighthouse"} 2.14e+09
+
+# HELP process_cpu_seconds_total Total CPU time spent.
+# TYPE process_cpu_seconds_total counter
+process_cpu_seconds_total{job="ethereum-cl-lighthouse",participant="1",client="lighthouse"} 1823.4
