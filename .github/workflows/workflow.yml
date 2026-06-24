@@ -1,0 +1,56 @@
+name: Helix
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+
+permissions:
+  contents: read
+
+jobs:
+  prometheus:
+    name: Prometheus Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate prometheus config, rules, tests, and fixtures
+        run: ./scripts/check-prometheus.sh
+
+  grafana:
+    name: Grafana Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Validate dashboard JSON structure
+        run: ./scripts/check-grafana.sh
+
+  docs:
+    name: Docs Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install MkDocs
+        run: pip install mkdocs-material
+
+      - name: Validate mkdocs config and build
+        run: mkdocs build --strict --quiet
